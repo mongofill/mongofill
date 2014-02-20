@@ -2,7 +2,7 @@
     "name": "koubas/mongofill",
     "description": "Polyfill of PECL Mongo extension",
     "minimum-stability": "stable",
-    "license": "BSD",
+    "license": "MIT",
     "authors": [
         {
             "name": "Jakub Husák",

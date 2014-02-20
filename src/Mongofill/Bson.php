@@ -5,7 +5,7 @@ namespace Mongofill;
 
 class Bson
 {
-    static public function encode($value)
+    static public function encode(array $value)
     {
         return self::encDocument($value);
     }
