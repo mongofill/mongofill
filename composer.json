@@ -1,0 +1,28 @@
+{
+    "name": "koubas/mongofill",
+    "description": "Polyfill of PECL Mongo extension",
+    "minimum-stability": "stable",
+    "license": "BSD",
+    "authors": [
+        {
+            "name": "Jakub Husák",
+            "email": "husak.j@gmail.com"
+        }
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "3.7.*"
+    },
+    "autoload": {
+        "classmap": [
+            { "Mongofill\\Bson": "src/Mongofill/Bson.php" },
+            { "Mongofill\\Protocol": "src/Mongofill/Protocol.php" },
+            { "MongoClient": "src/MongoClient.php" },
+            { "MongoId": "src/MongoId.php" },
+            { "MongoInt32": "src/MongoInt32.php" },
+            { "MongoInt64": "src/MongoInt64.php" }
+        ],
+        "files": [
+            "src/functions.php"
+        ]
+    }
+}
