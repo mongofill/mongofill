@@ -9,9 +9,6 @@
             "email": "husak.j@gmail.com"
         }
     ],
-    "require-dev": {
-        "phpunit/phpunit": "3.7.*"
-    },
     "autoload": {
         "classmap": [
             { "Mongofill\\Util": "src/Mongofill/Util.php" },

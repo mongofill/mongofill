@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <phpunit
-        bootstrap="./Bootstrap.php"
+        bootstrap="test/Bootstrap.php"
         colors="true"
         backupGlobals="false"
         >
     <testsuites>
         <testsuite name="Polyfilled Mongo Test Suite">
-            <directory>./MongoTest/</directory>
+            <directory>./test/MongoTest/</directory>
         </testsuite>
         <testsuite name="Mongofill Test Suite">
-            <directory>./MongofillTest/</directory>
+            <directory>./test/MongofillTest/</directory>
         </testsuite>
     </testsuites>
 </phpunit>
