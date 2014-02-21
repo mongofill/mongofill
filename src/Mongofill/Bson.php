@@ -14,12 +14,12 @@ class Bson
     {
         switch(true) {
             case $value instanceof \MongoId:
-                $bin = hex2bin($value->id);
+                $bin = hex2bin($value);
                 $sig = 0x0c;
                 if (strlen($bin) != 12) throw new \RuntimeException('Invalid MongoId value');
                 break;
             case $value instanceof \MongoInt64:
-                $value = $value->value;
+                $value = (int)(string)$value;
             case is_int($value):
                 $wl = $value & 0x0000ffff;
                 $wh = ($value >> 32) & 0x0000ffff;
@@ -27,7 +27,7 @@ class Bson
                 $sig  = 0x12;
                 break;
             case $value instanceof \MongoInt32:
-                $bin = pack('V', $value->value);
+                $bin = pack('V', (int)(string)$value);
                 $sig  = 0x10;
                 break;
             case is_float($value):

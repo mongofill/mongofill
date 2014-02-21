@@ -20,6 +20,7 @@
             { "MongoId": "src/MongoId.php" },
             { "MongoInt32": "src/MongoInt32.php" },
             { "MongoInt64": "src/MongoInt64.php" }
+            { "MongoException": "src/MongoException.php" }
         ],
         "files": [
             "src/functions.php"
