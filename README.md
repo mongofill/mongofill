@@ -1,3 +1,6 @@
+[![Build Status](https://secure.travis-ci.org/koubas/mongofill.png)](http://travis-ci.org/koubas/mongofill)
+
+
 Mongofill
 =========
 
