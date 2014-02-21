@@ -47,4 +47,25 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         ];
         $this->assertEquals($expect, Bson::decode($input));
     }
+
+    public function testEncodeDecodeCode()
+    {
+        $code  = "var foo = 'bar'";
+        $mcIn = new MongoCode($code);
+        $bson = Bson::encode([ 'code' => $mcIn ]);
+        $mcOut = Bson::decode($bson)['code'];
+        $this->assertEquals($code, $mcOut->__toString());
+        $this->assertEmpty($mcOut->getScope());
+    }
+
+    public function testEncodeDecodeCodeWithScope()
+    {
+        $code  = "var foo = 'bar'";
+        $scope = [ 'baz' => 'oof' ];
+        $mcIn = new MongoCode($code, $scope);
+        $bson = Bson::encode([ 'code' => $mcIn ]);
+        $mcOut = Bson::decode($bson)['code'];
+        $this->assertEquals($code, $mcOut->__toString());
+        $this->assertEquals($scope, $mcOut->getScope());
+    }
 }

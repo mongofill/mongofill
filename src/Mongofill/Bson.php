@@ -14,6 +14,8 @@ class Bson
     const ETYPE_DOCUMENT = 0x03;
     const ETYPE_ARRAY    = 0x04;
     const ETYPE_DOUBLE   = 0x01;
+    const ETYPE_CODE     = 0x0d;
+    const ETYPE_CODE_W_S = 0x0f;
 
     static public function encode(array $value)
     {
@@ -51,8 +53,19 @@ class Bson
                 $sig  = self::ETYPE_DOUBLE;
                 break;
             case is_string($value):
-                $bin = pack('V', strlen($value)+1) . "$value\0";
+                $bin = pack('Va*', strlen($value)+1, "$value\0");
                 $sig  = self::ETYPE_STRING;
+                break;
+            case $value instanceof \MongoCode:
+                $scope = $value->getScope();
+                $bin = pack('Va*', strlen($value)+1, "$value\0");
+                if ($scope) {
+                    $bin .= self::encDocument($scope);
+                    $bin = pack('Va*', strlen($bin)+1, $bin);
+                    $sig = self::ETYPE_CODE_W_S;
+                } else {
+                    $sig = self::ETYPE_CODE;
+                }
                 break;
             case is_array($value):
                 $bin = self::encDocument($value);
@@ -71,7 +84,7 @@ class Bson
         foreach ($values as $key => $value) {
             $data .= self::encElement($key, $value);
         }
-        return pack('V', strlen($data)+5) . $data . chr(0);
+        return pack('Va*', strlen($data)+5, "$data\0");
     }
 
     static private function decElement($data, &$offset)
@@ -82,11 +95,11 @@ class Bson
         switch($sig) {
             case self::ETYPE_ID:
                 $binId = Util::unpack('a24id', $data, $offset, 24)['id'];
-                $value = bin2hex($binId);
+                $value = new \MongoId(bin2hex($binId));
                 break;
             case self::ETYPE_STRING:
                 $len = Util::unpack('Vlen', $data, $offset, 4)['len'];
-                $value = substr($data, $offset, $len - 1); // subtract 1 fort nul-terminator
+                $value = substr($data, $offset, $len - 1); // subtract 1 for nul-terminator
                 $offset += $len;
                 break;
             case self::ETYPE_ARRAY:
@@ -102,6 +115,16 @@ class Bson
                 break;
             case self::ETYPE_DOUBLE:
                 $value = Util::unpack('ddouble', $data, $offset, 8)['double'];
+                break;
+            case self::ETYPE_CODE_W_S:
+                $offset += 4; // skip whole element size int
+            case self::ETYPE_CODE:
+                $scope = [];
+                $len = Util::unpack('Vlen', $data, $offset, 4)['len'];
+                $code = substr($data, $offset, $len - 1); // subtract 1 for nul-terminator
+                $offset += $len;
+                if ($sig === self::ETYPE_CODE_W_S) $scope = self::decDocument($data, $offset);
+                $value = new \MongoCode($code, $scope);
                 break;
             default:
                 throw new \RuntimeException('Invalid signature: 0x' . dechex($sig));
