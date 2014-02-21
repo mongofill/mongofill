@@ -37,7 +37,7 @@ class MongoIdTest extends PHPUnit_Framework_TestCase
         $id2 = new MongoId($id1);
 
         $this->assertEquals(1234567890, $id2->getTimestamp());
-        $this->assertEquals('51c011', substr($id2, 8, 6));
+        $this->assertEquals('0897ac', substr($id2, 8, 6));
         $this->assertEquals(314, $id2->getPid());
         $this->assertEquals(5555, $id2->getInc());
     }

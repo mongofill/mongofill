@@ -42,16 +42,13 @@ class MongoId
 
     private function assembleId()
     {
-        $crc = crc32($this->hostname);
-        $m1 = ($crc) & 255;
-        $m2 = ($crc >> 8) & 255;
-        $m3 = ($crc >> 16) & 255;
+        $hash = unpack('a3hash', md5($this->hostname, true))['hash'];
         $i1 = ($this->inc) & 255;
         $i2 = ($this->inc >> 8) & 255;
         $i3 = ($this->inc >> 16) & 255;
-        $binId = pack('NC3vC3',
+        $binId = pack('Na3vC3',
             $this->timestamp,
-            $m3, $m2, $m1,
+            $hash,
             $this->pid,
             $i3, $i2, $i1
         );
