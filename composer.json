@@ -14,12 +14,13 @@
     },
     "autoload": {
         "classmap": [
+            { "Mongofill\\Util": "src/Mongofill/Util.php" },
             { "Mongofill\\Bson": "src/Mongofill/Bson.php" },
             { "Mongofill\\Protocol": "src/Mongofill/Protocol.php" },
             { "MongoClient": "src/MongoClient.php" },
             { "MongoId": "src/MongoId.php" },
             { "MongoInt32": "src/MongoInt32.php" },
-            { "MongoInt64": "src/MongoInt64.php" }
+            { "MongoInt64": "src/MongoInt64.php" },
             { "MongoException": "src/MongoException.php" }
         ],
         "files": [

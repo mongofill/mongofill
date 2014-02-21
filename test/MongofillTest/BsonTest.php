@@ -4,16 +4,17 @@ use Mongofill\Bson;
 
 class BsonTest extends \PHPUnit_Framework_TestCase
 {
-    public function testSingleString()
+    public function testEncodeSingleString()
     {
         $input  = [ 'hello' => 'world' ];
         $expect = "\x16\x00\x00\x00\x02hello\x00\x06\x00\x00\x00world\x00\x00";
         $this->assertEquals($expect,  Bson::encode($input));
     }
 
-    public function testMoreComplexMixed()
+    public function testEncodeMoreComplexMixed()
     {
-        $input  = [ 'BSON' => [
+        $input  = [
+            'BSON' => [
                 "awesome",
                 5.05,
                 new MongoInt32(1986),
@@ -23,5 +24,27 @@ class BsonTest extends \PHPUnit_Framework_TestCase
                  ."\x00\x00\x00awesome\x00\x011\x00\x33\x33\x33\x33\x33\x33\x14"
                  ."\x40\x102\x00\xc2\x07\x00\x00\x00\x00";
         $this->assertEquals($expect,  Bson::encode($input));
+    }
+
+    public function testDecodeSingleString()
+    {
+        $input = "\x16\x00\x00\x00\x02hello\x00\x06\x00\x00\x00world\x00\x00";
+        $expect  = [ 'hello' => 'world' ];
+        $this->assertEquals($expect, Bson::decode($input));
+    }
+
+    public function testDecodeMoreComplexMixed()
+    {
+        $input = "\x31\x00\x00\x00\x04BSON\x00\x26\x00\x00\x00\x020\x00\x08"
+                ."\x00\x00\x00awesome\x00\x011\x00\x33\x33\x33\x33\x33\x33\x14"
+                ."\x40\x102\x00\xc2\x07\x00\x00\x00\x00";
+        $expect  = [
+            'BSON' => [
+                "awesome",
+                5.05,
+                1986,
+            ]
+        ];
+        $this->assertEquals($expect, Bson::decode($input));
     }
 }
