@@ -5,10 +5,11 @@ namespace Mongofill;
 
 class Protocol
 {
-    const OP_REPLY  = 1;
-    const OP_UPDATE = 2001;
-    const OP_INSERT = 2002;
-    const OP_QUERY  = 2004;
+    const OP_REPLY    = 1;
+    const OP_UPDATE   = 2001;
+    const OP_INSERT   = 2002;
+    const OP_QUERY    = 2004;
+    const OP_GET_MORE = 2005;
 
     const QF_TAILABLE_CURSOR   = 2;
     const QF_SLAVE_OK          = 4;
@@ -113,14 +114,26 @@ class Protocol
             $documents[] = Bson::decDocument($data, $offset);
         }
 
-        return $documents;
+        return [
+            'result'   => $documents,
+            'cursorId' => Util::decodeInt64($vars['cursorId1'], $vars['cursorId2']) ?: null,
+            'start'    => $vars['startingFrom'],
+            'count'    => $vars['numberReturned'],
+        ];
+    }
+
+    public function opGetMore($fullCollectionName, $limit, $cursorId)
+    {
+        // do request
+        $data = pack('Va*Va8', 0, "$fullCollectionName\0", $limit, Util::encodeInt64($cursorId));
+        $requestId = $this->sendMessage(self::OP_GET_MORE, $data);
+
+        // get response
+        return $this->opReply($requestId);
     }
 
     private function decodeHeader($data)
     {
         return unpack('VmessageLength/VrequestId/VresponseTo/Vopcode', $data);
     }
-
-
-
 }

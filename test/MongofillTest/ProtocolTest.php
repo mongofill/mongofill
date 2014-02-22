@@ -19,9 +19,13 @@ class ProtocolTest extends PHPUnit_Framework_TestCase
     public function testQuery()
     {
         $conn = $this->getProtocol();
-        $res = $conn->opQuery('mongofill.instest', [], 0, 2, Protocol::QF_SLAVE_OK);
+
+        $res = $conn->opQuery('mongofill.instest', [], 0, 10, Protocol::QF_SLAVE_OK);
         var_dump($res);
-        // ....
+        while (null !== $res['cursorId']) {
+            $res = $conn->opGetMore('mongofill.instest', 10, $res['cursorId']);
+            var_dump($res);
+        }
     }
 }
  
