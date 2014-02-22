@@ -68,4 +68,12 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($code, $mcOut->__toString());
         $this->assertEquals($scope, $mcOut->getScope());
     }
+
+    public function testDecodeSample1()
+    {
+        $input = "23000000075f69640053075e7384adaad580d11bc512666f6f00000000000800000000";
+        $doc = Bson::decode(hex2bin($input));
+        $this->assertEquals('53075e7384adaad580d11bc5', $doc['_id']);
+        $this->assertEquals(34359738368, $doc['foo']);
+    }
 }

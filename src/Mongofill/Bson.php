@@ -8,7 +8,7 @@ use Mongofill\Util;
 class Bson
 {
     const ETYPE_STRING   = 0x02;
-    const ETYPE_ID       = 0x0c;
+    const ETYPE_ID       = 0x07;
     const ETYPE_INT32    = 0x10;
     const ETYPE_INT64    = 0x12;
     const ETYPE_DOCUMENT = 0x03;
@@ -94,7 +94,7 @@ class Bson
         $name   = Util::parseCString($data, $offset);
         switch($sig) {
             case self::ETYPE_ID:
-                $binId = Util::unpack('a24id', $data, $offset, 24)['id'];
+                $binId = Util::unpack('a12id', $data, $offset, 12)['id'];
                 $value = new \MongoId(bin2hex($binId));
                 break;
             case self::ETYPE_STRING:
@@ -132,7 +132,7 @@ class Bson
         return [$name, $value];
     }
 
-    static private function decDocument($data, &$offset)
+    static public function decDocument($data, &$offset)
     {
         $docLen = Util::unpack('Vlen', $data, $offset, 4)['len'] - 5; // subtract len. and null-terminator
         $document = [];
@@ -144,8 +144,8 @@ class Bson
             $document[$elm[0]] = $elm[1];
         }
         if ($docLen !== $parsedLen) {
-            die(" $docLen - $elmLen ");
-            throw new \RuntimeException("Document length doesn't match total size of parsed elements");
+            throw new \RuntimeException(
+                "Document length doesn't match total size of parsed elements ($docLen:$parsedLen)");
         }
         $offset++; // add one byte for document nul-terminator
         return $document;
