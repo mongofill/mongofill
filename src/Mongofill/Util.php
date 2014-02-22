@@ -24,14 +24,14 @@ class Util
         return $str;
     }
 
-    public function encodeInt64($value)
+    public static function encodeInt64($value)
     {
         $i1 = $value & 0xffffffff;
         $i2 = ($value >> 32) & 0xffffffff;
         return pack('V2', $i1, $i2);
     }
 
-    public function decodeInt64($i1, $i2 = null)
+    public static function decodeInt64($i1, $i2 = null)
     {
         if (null !== $i2 && is_string($i1)) {
             $vars = Util::unpack('V2i', $i1, $offset, 8);
