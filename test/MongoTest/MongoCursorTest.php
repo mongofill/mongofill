@@ -9,7 +9,7 @@ class MongoCursorTest extends BaseTest
 
     public function testFindManyDocuments()
     {
-        $this->findNDocuments(5000);
+        $this->findNDocuments(500);
     }
 
     private function findNDocuments($n)
