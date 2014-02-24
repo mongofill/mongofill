@@ -1,6 +1,6 @@
 <?php
 
-class MongoClientTest extends PHPUnit_Framework_TestCase
+class MongoClientTest extends BaseTest
 {
     function testServerOptions()
     {
@@ -8,4 +8,3 @@ class MongoClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('mongodb://foo:123', $m->server);
     }
 }
- 

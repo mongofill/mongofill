@@ -1,5 +1,7 @@
 <?php
 
+use Mongofill\Protocol;
+
 class MongoClient
 {
     const VERSION = '1.3.0-mongofill';
@@ -21,9 +23,25 @@ class MongoClient
     private $host   = self::DEFAULT_HOST;
     private $port   = self::DEFAULT_PORT;
 
-    /** @var   */
-    private $connection;
+    /**
+     * @var Protocol
+     */
+    private $protocol;
 
+    /**
+     * @var resource
+     */
+    private $socket;
+
+    /**
+     * @var array
+     */
+    private $databases = [];
+
+    /**
+     * @param string $server
+     * @param null|array $options
+     */
     function __construct($server = 'mongodb://localhost:27017', array $options = [ 'connect' => true ])
     {
         $this->options = $options;
@@ -35,6 +53,10 @@ class MongoClient
         }
         if (isset($options['port'])) $this->port = $options['port'];
         $this->server = "mongodb://{$this->host}:{$this->port}";
+
+        if (isset($options['connect']) && $options['connect']) {
+            $this->connect();
+        }
     }
 
     /**
@@ -43,12 +65,65 @@ class MongoClient
      */
     public function connect()
     {
-
+        if (!$this->socket) {
+            $socket = fsockopen($this->host, $this->port);
+            if (false === $socket) {
+                return false;
+            }
+            $this->socket = $socket;
+            $this->protocol = new Protocol($socket);
+        }
+        return true;
     }
 
+    /**
+     * Close opened server connection
+     */
+    public function close()
+    {
+        if (null !== $this->socket)
+        {
+            fclose($this->socket);
+            $this->protocol = null;
+        }
+    }
 
+    /**
+     * @return Protocol
+     */
+    public function _getProtocol()
+    {
+        return $this->protocol;
+    }
 
+    /**
+     * @param string $name
+     * @return MongoDB
+     */
+    public function selectDB($name)
+    {
+        if (!isset($this->databases[$name])) {
+            $this->databases[$name] = new MongoDB($this, $name);
+        }
+        return $this->databases[$name];
+    }
 
+    /**
+     * @param string $name
+     * @return MongoDB
+     */
+    public function __get($name)
+    {
+        return $this->selectDB($name);
+    }
 
-
-} 
+    /**
+     * @param string $db
+     * @param string $collection
+     * @return MongoCollection
+     */
+    public function selectCollection($db, $collection)
+    {
+        return $this->selectDB($db)->selectCollection($collection);
+    }
+}
