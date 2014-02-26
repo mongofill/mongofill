@@ -9,6 +9,7 @@ class Bson
 {
     const ETYPE_STRING   = 0x02;
     const ETYPE_ID       = 0x07;
+    const ETYPE_DATE     = 0x09;
     const ETYPE_INT32    = 0x10;
     const ETYPE_INT64    = 0x12;
     const ETYPE_DOCUMENT = 0x03;
@@ -67,7 +68,11 @@ class Bson
                     $sig = self::ETYPE_CODE;
                 }
                 break;
-            case is_array($value):
+            case $value instanceof \MongoDate:
+                $bin = pack('V2', $value->sec, $value->usec);
+                $sig = self::ETYPE_DATE;
+                break;
+             case is_array($value):
                 $bin = self::encDocument($value);
                 $sig  = self::ETYPE_DOCUMENT;
                 break;
@@ -125,6 +130,10 @@ class Bson
                 $offset += $len;
                 if ($sig === self::ETYPE_CODE_W_S) $scope = self::decDocument($data, $offset);
                 $value = new \MongoCode($code, $scope);
+                break;
+            case self::ETYPE_DATE:
+                $vars = Util::unpack('V2i', $data, $offset, 8);
+                $value = new \MongoDate($vars['i1'], $vars['i2']);
                 break;
             default:
                 throw new \RuntimeException('Invalid signature: 0x' . dechex($sig));
