@@ -16,6 +16,7 @@
             { "Mongofill\\Protocol": "src/Mongofill/Protocol.php" },
             { "MongoClient": "src/MongoClient.php" },
             { "MongoDB": "src/MongoDB.php" },
+            { "MongoDate": "src/MongoDate.php" },
             { "MongoCollection": "src/MongoCollection.php" },
             { "MongoCursor": "src/MongoCursor.php" },
             { "MongoId": "src/MongoId.php" },
