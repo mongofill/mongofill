@@ -51,13 +51,13 @@ class Protocol
         return $requestId;
     }
 
-    private function opUpdate($fullCollectionName, array $query, array $update, $upsert, $multi)
+    public function opUpdate($fullCollectionName, array $query, array $update, array $options = [])
     {
         $flags = 0;
-        if ($upsert) $flags |= 1;
-        if ($multi) $flags |= 2;
-        $data = pack('Ca*Va*a*', 0, "$fullCollectionName\0", $flags, Bson::encode($query), Bson::encode($update));
-        $this->sendMessage($data, self::OP_UPDATE);
+        if (!empty($options['upsert'])) $flags |= 1;
+        if (!empty($options['multiple'])) $flags |= 2;
+        $data = pack('Va*Va*a*',0, "$fullCollectionName\0", $flags, Bson::encode($query), Bson::encode($update));
+        $this->sendMessage( self::OP_UPDATE, $data);
     }
 
     public function opInsert($fullCollectionName, array $documents, $continueOnError)

@@ -44,4 +44,32 @@ class MongoCollectionTest extends BaseTest
         $this->assertEquals('testGetName', $coll->getName());
      }
 
+    function test_update()
+    {
+        $coll = $this->getTestDB()->selectCollection('testUpdate');
+        $coll->insert(['foo'=>'bar']);
+        $result = iterator_to_array($coll->find());
+        $this->assertCount(1, $result);
+        $this->assertEquals('bar', $result[0]['foo']);
+        $result[0]['foo'] = 'notbar';
+        $coll->update(['_id'=>$result[0]['_id']], ['$set'=>['foo'=>'notbar']]);
+        $result = iterator_to_array($coll->find(['_id'=>$result[0]['_id']]));
+        $this->assertCount(1, $result);
+        $this->assertEquals('notbar', $result[0]['foo']);
+     }
+
+    function test_save()
+    {
+        $coll = $this->getTestDB()->selectCollection('testUpdate');
+        $coll->insert(['foo'=>'bar']);
+        $result = iterator_to_array($coll->find());
+        $this->assertCount(1, $result);
+        $this->assertEquals('bar', $result[0]['foo']);
+        $result[0]['foo'] = 'notbar';
+        $coll->save($result[0]);
+        $result = iterator_to_array($coll->find(['_id'=>$result[0]['_id']]));
+        $this->assertCount(1, $result);
+        $this->assertEquals('notbar', $result[0]['foo']);
+    }
+
 }

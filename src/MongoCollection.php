@@ -113,4 +113,55 @@ class MongoCollection
         // TODO: detect "w" option and return status array
         return TRUE;
     }
+
+    /**
+     * __toString return full name of collections.
+     * @return string
+     */
+
+    public function  __toString()
+    {
+        return $this->fqn;
+    }
+
+    /**
+     * @param       array $criteria Query specifing objects to be updated
+     * @param       array $new_object document to update
+     * @param       array $options
+     *
+     * @return bool
+     */
+
+    public function update(array $criteria , array $new_object , array$options = [] )
+    {
+         $this->protocol->opUpdate($this->fqn, $criteria, $new_object, $options);
+    }
+
+    public function save($a, array $options = [])
+    {
+        if(empty($a)){
+            return FALSE;
+        }
+        if(!empty($a['_id'])){
+            $this->update(array('_id' => $a['_id']), $a, $options );
+        } else {
+            return $this->insert($a, $options);
+        }
+        //TODO: Handle timeout
+        return TRUE;
+    }
+
+    /**
+     * @param boolean $scan_data Enable scan of base class
+     * @param boolean $full
+     */
+
+    public function validate($full=FALSE, $scan_data = FALSE)
+    {
+        $result =  $this->db->command(array('validate'=>$this->name, 'full'=>$full, 'scandata'=>$scan_data));
+        if(!empty($result[0])){
+            return $result[0];
+        }
+        return FALSE;
+    }
 }
