@@ -6,10 +6,13 @@ namespace Mongofill;
 class Protocol
 {
     const OP_REPLY    = 1;
+    const OP_MSG      = 1000;
     const OP_UPDATE   = 2001;
     const OP_INSERT   = 2002;
     const OP_QUERY    = 2004;
     const OP_GET_MORE = 2005;
+    const OP_DELETE   = 2006;
+    const OP_KILL_CURSORS = 2007;
 
     const QF_TAILABLE_CURSOR   = 2;
     const QF_SLAVE_OK          = 4;

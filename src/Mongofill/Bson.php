@@ -9,6 +9,7 @@ class Bson
 {
     const ETYPE_STRING   = 0x02;
     const ETYPE_ID       = 0x07;
+    const ETYPE_BOOL     = 0x08;
     const ETYPE_DATE     = 0x09;
     const ETYPE_INT32    = 0x10;
     const ETYPE_INT64    = 0x12;
@@ -44,6 +45,10 @@ class Bson
                 $i2 = ($value >> 32) & 0xffffffff;
                 $bin = pack('V2', $i1, $i2);
                 $sig  = self::ETYPE_INT64;
+                break;
+            case is_bool($value):
+                $bin = pack('C', $value);
+                $sig  = self::ETYPE_BOOL;
                 break;
             case $value instanceof \MongoInt32:
                 $bin = pack('V', (int)(string)$value);
@@ -114,6 +119,15 @@ class Bson
             case self::ETYPE_INT32:
                 $value = Util::unpack('Vint', $data, $offset, 4)['int'];
                 break;
+            case self::ETYPE_BOOL:
+                $value = Util::unpack('C', $data, $offset, 1);
+                if($value){
+                    $value = TRUE;
+                } else {
+                    $value = FALSE;
+                }
+                break;
+
             case self::ETYPE_INT64:
                 $vars = Util::unpack('V2i', $data, $offset, 8);
                 $value = $vars['i1'] | ($vars['i2'] << 32);
