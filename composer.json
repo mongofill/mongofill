@@ -7,6 +7,9 @@
         {
             "name": "Jakub Husák",
             "email": "husak.j@gmail.com"
+        },
+        {
+            "name": "thawkins"
         }
     ],
     "autoload": {
