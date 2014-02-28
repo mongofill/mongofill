@@ -15,6 +15,7 @@ class Bson
     const ETYPE_INT64    = 0x12;
     const ETYPE_DOCUMENT = 0x03;
     const ETYPE_ARRAY    = 0x04;
+    const ETYPE_BINARY   = 0x05;
     const ETYPE_DOUBLE   = 0x01;
     const ETYPE_CODE     = 0x0d;
     const ETYPE_CODE_W_S = 0x0f;
@@ -77,9 +78,19 @@ class Bson
                 $bin = pack('V2', $value->sec, $value->usec);
                 $sig = self::ETYPE_DATE;
                 break;
-             case is_array($value):
+            case is_array($value):
                 $bin = self::encDocument($value);
                 $sig  = self::ETYPE_DOCUMENT;
+                break;
+            case $value instanceof \MongoBinData:
+                if ($value->type != 2) {
+                    $bin = pack('C', $value->type).$value->bin;
+                } else {
+                    $bin = pack('CV', $value->type, strlen($value->bin)).$value->bin;
+                }
+                $bin = pack("V", strlen($value->bin) + (($value->type == 2) ? 4 : 0)).$bin;
+
+                $sig  = self::ETYPE_BINARY;
                 break;
             default:
                 throw new \RuntimeException('Unsupported value type: ' . gettype($value));
@@ -148,6 +159,26 @@ class Bson
             case self::ETYPE_DATE:
                 $vars = Util::unpack('V2i', $data, $offset, 8);
                 $value = new \MongoDate($vars['i1'], $vars['i2']);
+                break;
+            case self::ETYPE_BINARY:
+                $vars = Util::unpack('Vlen/Csubtype', $data, $offset, 5);
+                $len = $vars['len'];
+                $subtype = $vars['subtype'];
+                if ($subtype == 2) {
+                    // binary subtype 2 special case
+                    $len2 = Util::unpack('Vlen', $data, $offset, 4)['len'];
+                    if ($len2 == $len - 4) {
+                        $len = $len2;
+                    } else {
+                        // something is not right, restore offset
+                        $offset -= 4;
+                    }
+                }
+                if ($len < 0) {
+                    throw new \RuntimeException(sprintf("invalid binary length for key \"%s\": %d", $name, $len), 22);
+                }
+                $value = new \MongoBinData(substr($data, $offset, $len), $subtype);
+                $offset += $len;
                 break;
             default:
                 throw new \RuntimeException('Invalid signature: 0x' . dechex($sig));
