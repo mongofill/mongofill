@@ -4,6 +4,8 @@ use Mongofill\Protocol;
 
 class MongoCursor implements Iterator
 {
+    const INTERNAL_QUERY_LIMIT = 100;
+
     /**
      * @var MongoClient
      */
@@ -44,6 +46,11 @@ class MongoCursor implements Iterator
      * @var bool
      */
     private $end = false;
+
+    /**
+     * @var bool
+     */
+    private $hasMore = false;
 
     /**
      * @var bool
@@ -91,22 +98,73 @@ class MongoCursor implements Iterator
         $this->fields   = $fields;
     }
 
+    private function fetchDocumentsIfNeeded()
+    {
+        if (!$this->fetching) {
+            $this->fetchDocuments();
+        }
+    }
+
     private function fetchDocuments()
     {
-        if (null === $this->cursorId) {
-            $this->fetching = true;
-            $query = $this->query;
-            if ($this->querySort !== null)
-               $query = [ '$query'=>$query, '$orderby'=>$this->querySort ];
+        $this->fetching = true;
 
-            $response = $this->protocol->opQuery($this->fcn, $query, $this->querySkip, $this->queryLimit, 0, $this->fields);
-            $this->cursorId = $response['cursorId'];
-        } else {
-            $response = $this->protocol->opGetMore($this->fcn, 0, $this->cursorId);
-            $this->firstResult = false;
+        $response = $this->protocol->opQuery(
+            $this->fcn, 
+            $this->getQuery(), 
+            $this->querySkip, 
+            $this->queryLimit, 
+            0, //no flags
+            $this->fields
+        );
+
+        $this->cursorId = $response['cursorId'];
+        $this->setDocuments($response);
+    }
+
+    private function fetchMoreDocuments()
+    {
+        if (!$this->hasMore) {
+            return; 
         }
-        if (0 === $response['count']) $this->end = true;
-        $this->documents = $response['result'];
+
+        $limit = self::INTERNAL_QUERY_LIMIT;
+        $limited = true;
+        if ($this->queryLimit && $this->queryLimit < self::INTERNAL_QUERY_LIMIT) {
+            $limit = $this->queryLimit - count($this->documents);
+            $limited = false;
+        }
+
+        $response = $this->protocol->opGetMore($this->fcn, $limit+1, $this->cursorId);
+        $this->firstResult = false;
+    
+        $this->setDocuments($response);
+    }
+
+    private function getQuery()
+    {
+        $query = $this->query;
+        if ($this->querySort !== null) {
+            $query = [
+                '$query' => $query, 
+                '$orderby' => $this->querySort
+            ];
+        }
+
+        return $query;
+    }
+
+    private function setDocuments(array $response)
+    {
+        if (0 === $response['count']) {
+            $this->end = true;
+        }
+
+        if ($response['count'] > self::INTERNAL_QUERY_LIMIT) {
+            $this->hasMore = true;
+        }
+
+        $this->documents = array_merge($this->documents, $response['result']);
     }
 
     /**
@@ -142,6 +200,43 @@ class MongoCursor implements Iterator
     }
 
     /**
+     * @param boolean $foundOnly
+     * @return int
+     */
+    public function count($foundOnly = false)
+    {
+        $this->fetchDocumentsIfNeeded();
+
+        if ($foundOnly) {
+            return $this->countLocalData();
+        }
+
+        return $this->countQuerying();
+    }
+
+    private function countQuerying()
+    {
+        $ns = explode('.', $this->fcn);
+
+        $query = [
+            'count' => $ns[1],
+            'query' => $this->getQuery()
+        ];
+
+        $response = $this->protocol->opQuery($ns[0] . '.$cmd', $query, 0, -1, 0);
+        return (int) $response['result'][0]['n'];
+    }
+
+    private function countLocalData()
+    {
+        while($this->hasMore && !$this->end) {
+            $this->fetchMoreDocuments();
+        }
+
+        return count($this->documents);
+    }
+
+    /**
      * (PHP 5 &gt;= 5.0.0)<br/>
      * Return the current element
      * @link http://php.net/manual/en/iterator.current.php
@@ -149,9 +244,21 @@ class MongoCursor implements Iterator
      */
     public function current()
     {
-        if (!$this->fetching)
-            $this->fetchDocuments();
-        return current($this->documents);
+        $this->fetchDocumentsIfNeeded();
+
+        if ($this->fetching) { //not has getmore
+            return $this->documents[$this->currKey];
+        }
+
+        $cmd = [
+            'count' => $this->fcn,
+            'query' => $this->query
+        ];
+
+        $response = $this->protocol->opQuery("{$this->name}.\$cmd", $cmd, 0, -1, 0);
+
+        return 100;
+        
     }
 
     /**
@@ -162,15 +269,15 @@ class MongoCursor implements Iterator
      */
     public function next()
     {
-        if (!$this->fetching)
-            $this->fetchDocuments();
-        if (!$this->end && false === next($this->documents)) {
-            if (null !== $this->cursorId) {
-                $this->fetchDocuments();
+        $this->fetchDocumentsIfNeeded();
+        if (!isset($this->documents[$this->currKey+1])) {
+            if ($this->cursorId) {
+                $this->fetchMoreDocuments();
             } else {
                 $this->end = true;
             }
         }
+    
         $this->currKey++;
     }
 
@@ -182,7 +289,7 @@ class MongoCursor implements Iterator
      */
     public function key()
     {
-        return count($this->documents) ? $this->currKey : null;
+        return $this->documents ? $this->currKey : null;
     }
 
     /**
@@ -194,8 +301,8 @@ class MongoCursor implements Iterator
      */
     public function valid()
     {
-        if (!$this->fetching)
-            $this->fetchDocuments();
+        $this->fetchDocumentsIfNeeded();
+
         return !$this->end;
     }
 
