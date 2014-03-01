@@ -1,7 +1,6 @@
 <?php
 
-namespace Mongofill;
-
+namespace Mongofill {
 
 class Protocol
 {
@@ -149,4 +148,6 @@ class Protocol
     {
         return unpack('VmessageLength/VrequestId/VresponseTo/Vopcode', $data);
     }
+}
+
 }

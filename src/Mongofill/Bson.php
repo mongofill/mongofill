@@ -1,7 +1,6 @@
 <?php
 
-namespace Mongofill;
-
+namespace Mongofill {
 
 use Mongofill\Util;
 
@@ -209,4 +208,6 @@ class Bson
         $offset++; // add one byte for document nul-terminator
         return $document;
     }
+}
+
 }
