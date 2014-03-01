@@ -53,11 +53,6 @@ class MongoCursor implements Iterator
     private $hasMore = false;
 
     /**
-     * @var bool
-     */
-    private $firstResult = true;
-
-    /**
      * @var array
      */
     private $query = [ ];
@@ -125,6 +120,7 @@ class MongoCursor implements Iterator
     private function fetchMoreDocuments()
     {
         if (!$this->hasMore) {
+            $this->end = true;
             return; 
         }
 
@@ -136,7 +132,6 @@ class MongoCursor implements Iterator
         }
 
         $response = $this->protocol->opGetMore($this->fcn, $limit+1, $this->cursorId);
-        $this->firstResult = false;
     
         $this->setDocuments($response);
     }
@@ -246,11 +241,7 @@ class MongoCursor implements Iterator
     {
         $this->fetchDocumentsIfNeeded();
 
-        if ($this->fetching) { //not has getmore
-            return $this->documents[$this->currKey];
-        }
-    
-        return null;
+        return $this->documents[$this->currKey];
     }
 
     /**
@@ -308,12 +299,7 @@ class MongoCursor implements Iterator
      */
     public function rewind()
     {
-        if (!$this->firstResult) {
-            $this->documents   = [];
-            $this->cursorId    = null;
-            $this->firstResult = true;
-        }
-        reset($this->documents);
+        $this->currKey = 0;
         $this->end = false;
     }
 }
