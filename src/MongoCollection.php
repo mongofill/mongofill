@@ -47,9 +47,10 @@ class MongoCollection
     {
         $result = $this->db->command( array( 'count'=>$this->name, 'query'=> $query, 'limit' => $limit, 'skip'=>$skip));
         if(!empty($result[0]['ok'])){
-            return $result[0]['n'];
+            return (int) $result[0]['n'];
         }
-        return FALSE;
+
+        return false;
     }
 
     /**
