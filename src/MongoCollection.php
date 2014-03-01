@@ -18,7 +18,7 @@ class MongoCollection
     /**
      * @var MongoDB
      */
-    public $db;
+    private $db;
 
     /**
      * @var MongoClient
@@ -144,7 +144,7 @@ class MongoCollection
      * @return bool
      */
 
-    public function update(array $criteria , array $new_object , array$options = [] )
+    public function update(array $criteria , array $new_object , array $options = [] )
     {
          $this->protocol->opUpdate($this->fqn, $criteria, $new_object, $options);
     }
@@ -161,6 +161,11 @@ class MongoCollection
         }
         //TODO: Handle timeout
         return TRUE;
+    }
+
+    public function remove(array $criteria = [], array $options = [])
+    {
+        $this->protocol->opDelete($this->fqn, $criteria, $options);
     }
 
     /**
