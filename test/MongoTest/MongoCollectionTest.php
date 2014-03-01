@@ -34,7 +34,7 @@ class MongoCollectionTest extends BaseTest
         $coll->remove(['foo' => 'qux']);
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
-        $this->assertSame('bar', $result[0]['foo']);
+        $this->assertSame('bar', current($result)['foo']);
 
         $coll->insert([
             '_id' => new MongoId('000000000000000000000003'),
@@ -51,7 +51,7 @@ class MongoCollectionTest extends BaseTest
         $coll->remove(['foo' => 'qux']);
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
-        $this->assertSame('bar', $result[0]['foo']);
+        $this->assertSame('bar', current($result)['foo']);
     }
 
     function testDrop()
