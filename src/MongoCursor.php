@@ -38,12 +38,43 @@ class MongoCursor implements Iterator
     /**
      * @var bool
      */
+    private $fetching = false;
+
+    /**
+     * @var bool
+     */
     private $end = false;
 
     /**
      * @var bool
      */
     private $firstResult = true;
+
+    /**
+     * @var array
+     */
+    private $query = [ ];
+
+    /**
+     * @var array
+     */
+    private $fields = [ ];
+
+    /**
+     * @var int
+     */
+    private $queryLimit = 0;
+
+    /**
+     * @var int
+     */
+    private $querySkip = 0;
+
+    /**
+     * @var array|null
+     */
+    private $querySort = null;
+
 
     /**
      * @param MongoClient $connection
@@ -56,17 +87,19 @@ class MongoCursor implements Iterator
         $this->client   = $connection;
         $this->protocol = $connection->_getProtocol();
         $this->fcn      = $ns;
-        $this->fetchDocuments($query, $fields);
+        $this->query    = $query;
+        $this->fields   = $fields;
     }
 
-    /**
-     * @param array $query
-     * @param array $fields
-     */
-    private function fetchDocuments(array $query = [], array $fields = [])
+    private function fetchDocuments()
     {
         if (null === $this->cursorId) {
-            $response = $this->protocol->opQuery($this->fcn, $query, 0, 0, 0, $fields);
+            $this->fetching = true;
+            $query = $this->query;
+            if ($this->querySort !== null)
+               $query = [ '$query'=>$query, '$orderby'=>$this->querySort ];
+
+            $response = $this->protocol->opQuery($this->fcn, $query, $this->querySkip, $this->queryLimit, 0, $this->fields);
             $this->cursorId = $response['cursorId'];
         } else {
             $response = $this->protocol->opGetMore($this->fcn, 0, $this->cursorId);
@@ -77,6 +110,38 @@ class MongoCursor implements Iterator
     }
 
     /**
+     * @param int $limit
+     * @return MongoCursor
+     */
+    public function limit($limit)
+    {
+       $this->queryLimit = $limit;
+       return $this;
+    }
+
+    /**
+     * @param array|string $fields
+     * @return MongoCursor
+     */
+    public function sort($fields)
+    {
+        if (is_string($fields))
+            $fields = [ $fields=>1 ];
+        $this->querySort = $fields;
+        return $this;
+    }
+
+    /**
+     * @param int $skip
+     * @return MongoCursor
+     */
+    public function skip($skip)
+    {
+        $this->querySkip = $skip;
+        return $this;
+    }
+
+    /**
      * (PHP 5 &gt;= 5.0.0)<br/>
      * Return the current element
      * @link http://php.net/manual/en/iterator.current.php
@@ -84,6 +149,8 @@ class MongoCursor implements Iterator
      */
     public function current()
     {
+        if (!$this->fetching)
+            $this->fetchDocuments();
         return current($this->documents);
     }
 
@@ -95,6 +162,8 @@ class MongoCursor implements Iterator
      */
     public function next()
     {
+        if (!$this->fetching)
+            $this->fetchDocuments();
         if (!$this->end && false === next($this->documents)) {
             if (null !== $this->cursorId) {
                 $this->fetchDocuments();
@@ -125,6 +194,8 @@ class MongoCursor implements Iterator
      */
     public function valid()
     {
+        if (!$this->fetching)
+            $this->fetchDocuments();
         return !$this->end;
     }
 

@@ -63,6 +63,18 @@ class MongoCollection
     }
 
     /**
+     * @param array $query
+     * @param array $fields
+     * @return array or null
+     */
+    public function findOne(array $query = [], array $fields = [])
+    {
+        $cur = $this->find($query, $fields)->limit(1);
+        return ($cur->valid()) ? $cur->current() : null;
+    }
+
+
+    /**
      * Drop the current collection
      * @returns array
      */
