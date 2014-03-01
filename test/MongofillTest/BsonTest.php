@@ -93,4 +93,15 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($data, $out->bin);
     }
 
+    public function testEncodeDecodeMongoRegex()
+    {
+        $regex  = "/foo/iu";
+        $input = new MongoRegex($regex);
+        $bson = Bson::encode([ 'regex' => $input ]);
+        $out = Bson::decode($bson)['regex'];
+ 
+        $this->assertEquals('foo', $out['$regex']);
+        $this->assertEquals('iu', $out['$options']);
+
+    }
 }

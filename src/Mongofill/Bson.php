@@ -74,6 +74,11 @@ class Bson
                     $sig = self::ETYPE_CODE;
                 }
                 break;
+            case $value instanceof \MongoRegex:
+                $array = ['$regex' => $value->regex, '$options' => $value->flags];
+                $bin = self::encDocument($array);
+                $sig  = self::ETYPE_DOCUMENT;
+                break;
             case $value instanceof \MongoDate:
                 $bin = pack('V2', $value->sec, $value->usec);
                 $sig = self::ETYPE_DATE;

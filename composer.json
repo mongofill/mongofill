@@ -24,6 +24,7 @@
             { "MongoCollection": "src/MongoCollection.php" },
             { "MongoCursor": "src/MongoCursor.php" },
             { "MongoId": "src/MongoId.php" },
+            { "MongoRegex": "src/MongoRegex.php" },
             { "MongoInt32": "src/MongoInt32.php" },
             { "MongoInt64": "src/MongoInt64.php" },
             { "MongoCode": "src/MongoCode.php" },
