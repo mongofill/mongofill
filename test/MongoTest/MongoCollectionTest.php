@@ -13,7 +13,7 @@ class MongoCollectionTest extends BaseTest
         $this->assertEquals([
             '_id' => '000000000000000000000042',
             'foo' => 'bar',
-        ], $result[0]);
+        ], current($result));
     }
 
     function test_drop()
@@ -50,12 +50,15 @@ class MongoCollectionTest extends BaseTest
         $coll->insert(['foo'=>'bar']);
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
-        $this->assertEquals('bar', $result[0]['foo']);
-        $result[0]['foo'] = 'notbar';
-        $coll->update(['_id'=>$result[0]['_id']], ['$set'=>['foo'=>'notbar']]);
-        $result = iterator_to_array($coll->find(['_id'=>$result[0]['_id']]));
+
+        $record = current($result);
+        $this->assertEquals('bar', $record['foo']);
+        $record['foo'] = 'notbar';
+        $coll->update(['_id'=> $record['_id']], ['$set'=>['foo'=>'notbar']]);
+        
+        $result = iterator_to_array($coll->find(['_id'=> $record['_id']]));
         $this->assertCount(1, $result);
-        $this->assertEquals('notbar', $result[0]['foo']);
+        $this->assertEquals('notbar', $record['foo']);
      }
 
     function test_save()
@@ -64,12 +67,16 @@ class MongoCollectionTest extends BaseTest
         $coll->insert(['foo'=>'bar']);
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
-        $this->assertEquals('bar', $result[0]['foo']);
-        $result[0]['foo'] = 'notbar';
-        $coll->save($result[0]);
-        $result = iterator_to_array($coll->find(['_id'=>$result[0]['_id']]));
+
+        $record = current($result);
+        $this->assertEquals('bar', $record['foo']);
+        $record['foo'] = 'notbar';
+        $coll->save($record);
+
+
+        $result = iterator_to_array($coll->find(['_id'=> $record['_id']]));
         $this->assertCount(1, $result);
-        $this->assertEquals('notbar', $result[0]['foo']);
+        $this->assertEquals('notbar', $record['foo']);
     }
 
 }

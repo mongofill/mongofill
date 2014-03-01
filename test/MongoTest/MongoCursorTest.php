@@ -38,7 +38,8 @@ class MongoCursorTest extends BaseTest
         $this->assertCount(500, $this->coll->find());
 
         $i=0;
-        foreach ($this->coll->find() as $record) {
+        foreach ($this->coll->find() as $key => $record) {
+            $this->assertSame($key, $record['_id']);
             $this->assertSame(++$i, $record['foo']);
         }
     }

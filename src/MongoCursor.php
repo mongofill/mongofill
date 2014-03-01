@@ -249,16 +249,8 @@ class MongoCursor implements Iterator
         if ($this->fetching) { //not has getmore
             return $this->documents[$this->currKey];
         }
-
-        $cmd = [
-            'count' => $this->fcn,
-            'query' => $this->query
-        ];
-
-        $response = $this->protocol->opQuery("{$this->name}.\$cmd", $cmd, 0, -1, 0);
-
-        return 100;
-        
+    
+        return null;
     }
 
     /**
@@ -289,7 +281,9 @@ class MongoCursor implements Iterator
      */
     public function key()
     {
-        return $this->documents ? $this->currKey : null;
+        $record = $this->current();
+        
+        return (string) $record['_id'];
     }
 
     /**
