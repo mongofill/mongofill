@@ -25,7 +25,7 @@ class MongoRegex
         $delimiter = $regex[0];
         $flagsStart = strrpos($regex, $delimiter);  
 
-        $this->regex = substr($regex, 1, $flagsStart - 1);
-        $this->flags = substr($regex, $flagsStart + 1);
+        $this->regex = (string)substr($regex, 1, $flagsStart - 1);
+        $this->flags = (string)substr($regex, $flagsStart + 1);
     }
 }
