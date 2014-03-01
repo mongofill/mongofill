@@ -7,16 +7,12 @@ class MongoRegex
 
     public function __construct($regex)
     {
-        if (!$this->isValidRegEx($regex)) {
-            throw new MongoException('invalid regex');
-        }
-        
         $this->parseRegex($regex);
     }
 
     public function __toString()
     {
-        return (string) $this->regex;
+        return '/' . $this->regex . '/' . $this->flags;
     }
 
     private function isValidRegEx($regex)
