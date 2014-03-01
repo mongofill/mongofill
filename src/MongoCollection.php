@@ -18,7 +18,7 @@ class MongoCollection
     /**
      * @var MongoDB
      */
-    public $db;
+    private $db;
 
     /**
      * @var MongoClient
@@ -47,9 +47,10 @@ class MongoCollection
     {
         $result = $this->db->command( array( 'count'=>$this->name, 'query'=> $query, 'limit' => $limit, 'skip'=>$skip));
         if(!empty($result[0]['ok'])){
-            return $result[0]['n'];
+            return (int) $result[0]['n'];
         }
-        return FALSE;
+
+        return false;
     }
 
     /**
@@ -144,7 +145,7 @@ class MongoCollection
      * @return bool
      */
 
-    public function update(array $criteria , array $new_object , array$options = [] )
+    public function update(array $criteria , array $new_object , array $options = [] )
     {
          $this->protocol->opUpdate($this->fqn, $criteria, $new_object, $options);
     }
@@ -161,6 +162,11 @@ class MongoCollection
         }
         //TODO: Handle timeout
         return TRUE;
+    }
+
+    public function remove(array $criteria = [], array $options = [])
+    {
+        $this->protocol->opDelete($this->fqn, $criteria, $options);
     }
 
     /**
