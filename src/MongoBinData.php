@@ -2,6 +2,16 @@
 
 class MongoBinData
 {
+
+    /* Constants */
+    const GENERIC      = 0;
+    const FUNC         = 1;
+    const BYTE_ARRAY   = 2;
+    const UUID         = 3;
+    const UUID_RFC4122 = 4;
+    const MD5          = 5;
+    const CUSTOM       = 128;
+
     /**
      * @var string
      */
