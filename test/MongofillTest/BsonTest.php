@@ -77,6 +77,13 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(34359738368, $doc['foo']);
     }
 
+    public function testEncodeDecodeNull()
+    {
+        $bson = Bson::encode([ 'null' => null ]);
+        $out = Bson::decode($bson)['null'];
+        $this->assertNull($out);
+    }
+
     public function testEncodeDecodeBinData()
     {
         // subtype 0
@@ -93,6 +100,15 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($data, $out->bin);
     }
 
+    public function testEncodeTimestamp()
+    {
+        $input = new MongoTimestamp(123, 456);
+        $bson = Bson::encode([ 'ts' => $input ]);
+        $out = Bson::decode($bson)['ts'];
+        $this->assertEquals($input, $out);
+        $this->assertEquals('1100000011747300c80100007b00000000', bin2hex($bson));
+    }
+
     public function testEncodeDecodeMongoRegex()
     {
         $regex  = "/foo/iu";
@@ -100,8 +116,7 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $bson = Bson::encode([ 'regex' => $input ]);
         $out = Bson::decode($bson)['regex'];
  
-        $this->assertEquals('foo', $out['$regex']);
-        $this->assertEquals('iu', $out['$options']);
-
+        $this->assertEquals($input, $out);
     }
+
 }
