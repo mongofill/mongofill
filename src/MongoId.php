@@ -34,9 +34,15 @@ class MongoId
         if (null === self::$refInc) {
            self::$refInc = (int)mt_rand(0, pow(2, 24));
         }
+        
         $this->timestamp = time();
-        $this->pid = getmypid();
         $this->inc = self::$refInc++;
+        $this->pid = getmypid();
+
+        if ($this->pid > 32768) {
+            $this->pid = $this->pid - 65536;
+        }
+
         return $this->assembleId();
     }
 
