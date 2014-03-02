@@ -28,7 +28,9 @@
             { "MongoInt32": "src/MongoInt32.php" },
             { "MongoInt64": "src/MongoInt64.php" },
             { "MongoCode": "src/MongoCode.php" },
-            { "MongoException": "src/MongoException.php" }
+            { "MongoException": "src/MongoException.php" },
+            { "MongoLog": "src/MongoLog.php" },
+            { "MongoTimestamp": "src/MongoTimestamp.php" }
         ],
         "files": [
             "src/functions.php"
