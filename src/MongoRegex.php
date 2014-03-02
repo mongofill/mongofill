@@ -7,29 +7,24 @@ class MongoRegex
 
     public function __construct($regex)
     {
-        if (!$this->isValidRegEx($regex)) {
-            throw new MongoException('invalid regex');
+        $flagsStart = strrpos($regex, $regex[0]);  
+        $this->regex = (string)substr($regex, 1, $flagsStart - 1);
+        $this->flags = (string)substr($regex, $flagsStart + 1);
+
+        if (!$this->regexIsValid($regex)) {
+            throw new MongoException('invalid regex', MongoException::INVALID_REGEX);
         }
-        
-        $this->parseRegex($regex);
+    }
+
+    public function regexIsValid($regex)
+    {
+        return substr_count($regex, '/') >= 2 && 
+          ((strlen($regex) && @preg_match($regex, null) !== false) || strlen($this->flags));
     }
 
     public function __toString()
     {
-        return (string) $this->regex;
+        return '/' . $this->regex . '/' . $this->flags;
     }
 
-    private function isValidRegEx($regex)
-    {
-        return @preg_match($regex, null) !== false;
-    }
-
-    private function parseRegex($regex)
-    {
-        $delimiter = $regex[0];
-        $flagsStart = strrpos($regex, $delimiter);  
-
-        $this->regex = substr($regex, 1, $flagsStart - 1);
-        $this->flags = substr($regex, $flagsStart + 1);
-    }
 }
