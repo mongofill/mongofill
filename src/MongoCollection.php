@@ -182,4 +182,24 @@ class MongoCollection
         }
         return FALSE;
     }
+
+    /**
+     * @var string|array $keys
+     * @return string|null
+     */
+    protected static function toIndexString($keys)
+    {
+        if (is_string($keys)) {
+          return str_replace('.', '_', $keys . '_1');
+        } else if (is_array($keys) || is_object($keys)) {
+          $keys = (array)$keys;
+          foreach ($keys as $k => $v) {
+            $keys[$k] = str_replace('.', '_', $k . '_' . $v);
+          }
+          return implode('_', $keys);
+        } 
+        trigger_error('MongoCollection::toIndexString(): The key needs to be either a string or an array', E_USER_WARNING);
+        return null;
+    }
+
 }
