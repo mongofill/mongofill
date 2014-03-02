@@ -84,7 +84,10 @@ class Bson
                 break;
             case is_array($value):
                 $bin = self::encDocument($value);
-                $sig  = self::ETYPE_DOCUMENT;
+                $sig = self::ETYPE_ARRAY;
+                if (self::isDocument($value)) {
+                    $sig = self::ETYPE_DOCUMENT;
+                }
                 break;
             case $value instanceof \MongoBinData:
                 if ($value->type != 2) {
@@ -109,6 +112,7 @@ class Bson
         foreach ($values as $key => $value) {
             $data .= self::encElement($key, $value);
         }
+
         return pack('Va*', strlen($data)+5, "$data\0");
     }
 
@@ -207,6 +211,18 @@ class Bson
         }
         $offset++; // add one byte for document nul-terminator
         return $document;
+    }
+
+    static public function isDocument(array $document)
+    {
+        $i = 0; 
+        foreach ($document as $key => $notUsed) {
+            if ($key !== $i++) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
