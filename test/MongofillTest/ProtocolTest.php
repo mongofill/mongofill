@@ -27,5 +27,11 @@ class ProtocolTest extends PHPUnit_Framework_TestCase
             //var_dump($res);
         }
     }
+
+    public function testDelete()
+    {
+        $conn = $this->getProtocol();
+        $conn->opDelete('mongofill.instest', [], []);
+    }
 }
  

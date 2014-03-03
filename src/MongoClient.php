@@ -42,8 +42,12 @@ class MongoClient
      * @param string $server
      * @param null|array $options
      */
-    function __construct($server = 'mongodb://localhost:27017', array $options = [ 'connect' => true ])
+    public function __construct($server = 'mongodb://localhost:27017', array $options = [])
     {
+        if (!$options) {
+            $options = ['connect' => true];
+        }
+
         $this->options = $options;
         if (preg_match('/mongodb:\/\/([0-9a-zA-Z_.-]+)(:(\d+))?/', $server, $matches)) {
             $this->host = $matches[1];
@@ -77,6 +81,14 @@ class MongoClient
     }
 
     /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return (string)$this->host . ':' . (string)$this->port;
+    }
+
+    /**
      * Close opened server connection
      */
     public function close()
@@ -93,6 +105,10 @@ class MongoClient
      */
     public function _getProtocol()
     {
+        if (!$this->connected) {
+            $this->connect();
+        }
+
         return $this->protocol;
     }
 

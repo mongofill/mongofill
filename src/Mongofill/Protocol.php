@@ -1,7 +1,6 @@
 <?php
 
-namespace Mongofill;
-
+namespace Mongofill {
 
 class Protocol
 {
@@ -135,8 +134,20 @@ class Protocol
         return $this->opReply($requestId);
     }
 
+    public function opDelete($fullCollectionName, array $query, array $options = [])
+    {
+        $flags = 0;
+
+        // do request
+        $data = pack('Va*Va*', 0, "$fullCollectionName\0", $flags,  Bson::encode($query));
+
+        $requestId = $this->sendMessage(self::OP_DELETE, $data);
+    }
+
     private function decodeHeader($data)
     {
         return unpack('VmessageLength/VrequestId/VresponseTo/Vopcode', $data);
     }
+}
+
 }

@@ -17,16 +17,20 @@
             { "Mongofill\\Util": "src/Mongofill/Util.php" },
             { "Mongofill\\Bson": "src/Mongofill/Bson.php" },
             { "Mongofill\\Protocol": "src/Mongofill/Protocol.php" },
+            { "MongoBinData": "src/MongoBinData.php" },
             { "MongoClient": "src/MongoClient.php" },
             { "MongoDB": "src/MongoDB.php" },
             { "MongoDate": "src/MongoDate.php" },
             { "MongoCollection": "src/MongoCollection.php" },
             { "MongoCursor": "src/MongoCursor.php" },
             { "MongoId": "src/MongoId.php" },
+            { "MongoRegex": "src/MongoRegex.php" },
             { "MongoInt32": "src/MongoInt32.php" },
             { "MongoInt64": "src/MongoInt64.php" },
             { "MongoCode": "src/MongoCode.php" },
-            { "MongoException": "src/MongoException.php" }
+            { "MongoException": "src/MongoException.php" },
+            { "MongoLog": "src/MongoLog.php" },
+            { "MongoTimestamp": "src/MongoTimestamp.php" }
         ],
         "files": [
             "src/functions.php"

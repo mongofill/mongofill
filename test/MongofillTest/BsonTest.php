@@ -76,4 +76,32 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('53075e7384adaad580d11bc5', $doc['_id']);
         $this->assertEquals(34359738368, $doc['foo']);
     }
+
+    public function testEncodeDecodeBinData()
+    {
+        // subtype 0
+        $data  = "somebinarydata\0\0\0";
+        $input = new MongoBinData($data, 0);
+        $bson = Bson::encode([ 'bin' => $input ]);
+        $out = Bson::decode($bson)['bin'];
+        $this->assertEquals($data, $out->bin);
+
+        // subtype 2
+        $input = new MongoBinData($data, 2);
+        $bson = Bson::encode([ 'bin' => $input ]);
+        $out = Bson::decode($bson)['bin'];
+        $this->assertEquals($data, $out->bin);
+    }
+
+    public function testEncodeDecodeMongoRegex()
+    {
+        $regex  = "/foo/iu";
+        $input = new MongoRegex($regex);
+        $bson = Bson::encode([ 'regex' => $input ]);
+        $out = Bson::decode($bson)['regex'];
+ 
+        $this->assertEquals('foo', $out['$regex']);
+        $this->assertEquals('iu', $out['$options']);
+
+    }
 }

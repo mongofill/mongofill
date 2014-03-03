@@ -18,7 +18,7 @@ class MongoCollection
     /**
      * @var MongoDB
      */
-    public $db;
+    private $db;
 
     /**
      * @var MongoClient
@@ -47,9 +47,10 @@ class MongoCollection
     {
         $result = $this->db->command( array( 'count'=>$this->name, 'query'=> $query, 'limit' => $limit, 'skip'=>$skip));
         if(!empty($result[0]['ok'])){
-            return $result[0]['n'];
+            return (int) $result[0]['n'];
         }
-        return FALSE;
+
+        return false;
     }
 
     /**
@@ -61,6 +62,18 @@ class MongoCollection
     {
         return new MongoCursor($this->client, $this->fqn, $query, $fields);
     }
+
+    /**
+     * @param array $query
+     * @param array $fields
+     * @return array or null
+     */
+    public function findOne(array $query = [], array $fields = [])
+    {
+        $cur = $this->find($query, $fields)->limit(1);
+        return ($cur->valid()) ? $cur->current() : null;
+    }
+
 
     /**
      * Drop the current collection
@@ -132,7 +145,7 @@ class MongoCollection
      * @return bool
      */
 
-    public function update(array $criteria , array $new_object , array$options = [] )
+    public function update(array $criteria , array $new_object , array $options = [] )
     {
          $this->protocol->opUpdate($this->fqn, $criteria, $new_object, $options);
     }
@@ -151,6 +164,11 @@ class MongoCollection
         return TRUE;
     }
 
+    public function remove(array $criteria = [], array $options = [])
+    {
+        $this->protocol->opDelete($this->fqn, $criteria, $options);
+    }
+
     /**
      * @param boolean $scan_data Enable scan of base class
      * @param boolean $full
@@ -164,4 +182,24 @@ class MongoCollection
         }
         return FALSE;
     }
+
+    /**
+     * @var string|array $keys
+     * @return string|null
+     */
+    protected static function toIndexString($keys)
+    {
+        if (is_string($keys)) {
+          return str_replace('.', '_', $keys . '_1');
+        } else if (is_array($keys) || is_object($keys)) {
+          $keys = (array)$keys;
+          foreach ($keys as $k => $v) {
+            $keys[$k] = str_replace('.', '_', $k . '_' . $v);
+          }
+          return implode('_', $keys);
+        } 
+        trigger_error('MongoCollection::toIndexString(): The key needs to be either a string or an array', E_USER_WARNING);
+        return null;
+    }
+
 }
