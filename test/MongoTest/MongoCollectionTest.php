@@ -2,32 +2,47 @@
 
 class MongoCollectionTest extends BaseTest
 {
-    function testInsert()
+    public function testInsert()
     {
         $coll = $this->getTestDB()->selectCollection('testInsert');
-        $coll->insert([
-            '_id' => new MongoId('000000000000000000000042'),
-            'foo' => 'bar' ]);
-        $result = iterator_to_array($coll->find());
-        $this->assertCount(1, $result);
-        $this->assertEquals([
-            '_id' => '000000000000000000000042',
-            'foo' => 'bar',
-        ], current($result));
+        
+        $data = ['foo' => 'bar' ];
+        $coll->insert($data);
+
+        $this->assertCount(1, $coll->find());
+        $this->assertEquals($data, $coll->findOne());
     }
 
-    function testRemove()
+    public function testInsertWithId()
+    {
+        $coll = $this->getTestDB()->selectCollection('testInsert');
+
+        $data = [
+            '_id' => new MongoId('000000000000000000000042'),
+            'foo' => 'bar'
+        ];
+
+        $coll->insert($data);
+
+        $this->assertCount(1, $coll->find());
+        $this->assertEquals($data, $coll->findOne());
+    }
+
+    public function testRemove()
     {
         $coll = $this->getTestDB()->selectCollection('testDelete');
-        $coll->insert([
+        
+        $data = [
             '_id' => new MongoId('000000000000000000000001'),
             'foo' => 'bar'
-        ]);
+        ];
+        $coll->insert($data);
 
-        $coll->insert([
+        $data = [
             '_id' => new MongoId('000000000000000000000002'),
             'foo' => 'qux'
-        ]);
+        ];
+        $coll->insert($data);
 
         $this->assertCount(2, $coll->find());
 
@@ -36,15 +51,17 @@ class MongoCollectionTest extends BaseTest
         $this->assertCount(1, $result);
         $this->assertSame('bar', current($result)['foo']);
 
-        $coll->insert([
+        $data = [
             '_id' => new MongoId('000000000000000000000003'),
             'foo' => 'qux'
-        ]);
+        ];
+        $coll->insert($data);
 
-        $coll->insert([
+        $data = [
             '_id' => new MongoId('000000000000000000000004'),
             'foo' => 'qux'
-        ]);
+        ];
+        $coll->insert($data);
         
         $this->assertCount(3, $coll->find());
 
@@ -54,38 +71,50 @@ class MongoCollectionTest extends BaseTest
         $this->assertSame('bar', current($result)['foo']);
     }
 
-    function testDrop()
+    public function testDrop()
     {
         $coll = $this->getTestDB()->selectCollection('testDrop');
-        $coll->insert([
-                '_id' => new MongoId('000000000000000000000042'),
-                'foo' => 'bar' ]);
+
+        $data = [
+            '_id' => new MongoId('000000000000000000000042'),
+            'foo' => 'bar'
+        ];
+
+        $coll->insert($data);
+
         $this->assertEquals(1, $coll->count());
         $coll->drop();
         $this->assertEquals(0, $coll->count());
     }
 
-    function testCount()
+    public function testCount()
     {
         $coll = $this->getTestDB()->selectCollection('testCount');
         $coll->drop();
         $this->assertEquals(0, $coll->count());
-        $coll->insert([
-                '_id' => new MongoId('000000000000000000000042'),
-                'foo' => 'bar' ]);
+
+        $data = [
+            '_id' => new MongoId('000000000000000000000042'),
+            'foo' => 'bar'
+        ];
+
+        $coll->insert($data);
+
         $this->assertEquals(1, $coll->count());
      }
 
-    function testGetName()
+    public function testGetName()
     {
         $coll = $this->getTestDB()->selectCollection('testGetName');
         $this->assertEquals('testGetName', $coll->getName());
      }
 
-    function testUpdate()
+    public function testUpdate()
     {
+        $data = ['foo'=>'bar'];
+
         $coll = $this->getTestDB()->selectCollection('testUpdate');
-        $coll->insert(['foo'=>'bar']);
+        $coll->insert($data);
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
 
@@ -99,10 +128,12 @@ class MongoCollectionTest extends BaseTest
         $this->assertEquals('notbar', $record['foo']);
      }
 
-    function testSave()
+    public function testSave()
     {
+        $data = ['foo'=>'bar'];
+
         $coll = $this->getTestDB()->selectCollection('testUpdate');
-        $coll->insert(['foo'=>'bar']);
+        $coll->insert($data);
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
 

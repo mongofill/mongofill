@@ -4,10 +4,12 @@ class MongoDBTest extends BaseTest
 {
     function testListCollections()
     {
+        $data = ['foo' => 'bar'];
+
         $db = $this->getTestDB();
 
         $coll = $db->selectCollection('testDB');
-        $coll->insert(['foo' => 'bar']);
+        $coll->insert($data);
 
         $collections = $db->listCollections();
         $this->assertCount(1, $collections);
@@ -17,10 +19,12 @@ class MongoDBTest extends BaseTest
 
     function testListCollectionsWithSystem()
     {
+        $data = ['foo' => 'bar'];
+        
         $db = $this->getTestDB();
         
         $coll = $db->selectCollection('testDB');
-        $coll->insert(['foo' => 'bar']);
+        $coll->insert($data);
 
         $collections = $db->listCollections(true);
         $this->assertCount(2, $collections);
