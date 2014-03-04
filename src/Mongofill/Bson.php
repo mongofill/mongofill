@@ -18,6 +18,11 @@ class Bson
     const ETYPE_DOUBLE   = 0x01;
     const ETYPE_CODE     = 0x0d;
     const ETYPE_CODE_W_S = 0x0f;
+    const ETYPE_UNDEF    = 0x06;
+    const ETYPE_NULL     = 0x0a;
+    const ETYPE_REGEX    = 0x0b;
+    const ETYPE_SYMBOL   = 0x0e;
+    const ETYPE_TIMESTAMP= 0x11;
 
     static public function encode(array $value)
     {
@@ -50,6 +55,10 @@ class Bson
                 $bin = pack('C', $value);
                 $sig  = self::ETYPE_BOOL;
                 break;
+            case is_null($value):
+                $bin = '';
+                $sig = self::ETYPE_NULL;
+                break;
             case $value instanceof \MongoInt32:
                 $bin = pack('V', (int)(string)$value);
                 $sig  = self::ETYPE_INT32;
@@ -74,13 +83,16 @@ class Bson
                 }
                 break;
             case $value instanceof \MongoRegex:
-                $array = ['$regex' => $value->regex, '$options' => $value->flags];
-                $bin = self::encDocument($array);
-                $sig  = self::ETYPE_DOCUMENT;
+                $bin = $value->regex."\0".$value->flags."\0";
+                $sig  = self::ETYPE_REGEX;
                 break;
             case $value instanceof \MongoDate:
                 $bin = pack('V2', $value->sec, $value->usec);
                 $sig = self::ETYPE_DATE;
+                break;
+            case $value instanceof \MongoTimestamp:
+                $bin = pack('V2', $value->inc, $value->sec);
+                $sig = self::ETYPE_TIMESTAMP;
                 break;
             case is_array($value):
                 $bin = self::encDocument($value);
@@ -127,6 +139,7 @@ class Bson
                 $value = new \MongoId(bin2hex($binId));
                 break;
             case self::ETYPE_STRING:
+            case self::ETYPE_SYMBOL:
                 $len = Util::unpack('Vlen', $data, $offset, 4)['len'];
                 $value = substr($data, $offset, $len - 1); // subtract 1 for nul-terminator
                 $offset += $len;
@@ -146,7 +159,10 @@ class Bson
                     $value = FALSE;
                 }
                 break;
-
+            case self::ETYPE_UNDEF:
+            case self::ETYPE_NULL:
+                $value = null;
+                break;
             case self::ETYPE_INT64:
                 $vars = Util::unpack('V2i', $data, $offset, 8);
                 $value = $vars['i1'] | ($vars['i2'] << 32);
@@ -164,9 +180,18 @@ class Bson
                 if ($sig === self::ETYPE_CODE_W_S) $scope = self::decDocument($data, $offset);
                 $value = new \MongoCode($code, $scope);
                 break;
+            case self::ETYPE_REGEX:
+                $regex = Util::parseCString($data, $offset);
+                $flags = Util::parseCString($data, $offset);
+                $value = new \MongoRegex('/'.$regex.'/'.$flags);
+                break;
             case self::ETYPE_DATE:
                 $vars = Util::unpack('V2i', $data, $offset, 8);
                 $value = new \MongoDate($vars['i1'], $vars['i2']);
+                break;
+            case self::ETYPE_TIMESTAMP:
+                $vars = Util::unpack('V2i', $data, $offset, 8);
+                $value = new \MongoTimestamp($vars['i2'], $vars['i1']);
                 break;
             case self::ETYPE_BINARY:
                 $vars = Util::unpack('Vlen/Csubtype', $data, $offset, 5);
