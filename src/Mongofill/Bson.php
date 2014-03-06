@@ -153,10 +153,10 @@ class Bson
                 break;
             case self::ETYPE_BOOL:
                 $value = Util::unpack('C', $data, $offset, 1);
-                if($value){
-                    $value = TRUE;
+                if($value[1]){
+                    $value = true;
                 } else {
-                    $value = FALSE;
+                    $value = false;
                 }
                 break;
             case self::ETYPE_UNDEF:

@@ -11,6 +11,15 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expect,  Bson::encode($input));
     }
 
+    public function testEncodeDecodeBooleanString()
+    {
+        $input  = [ 'hello' => false ];        
+        $this->assertEquals($input, Bson::decode(Bson::encode($input)));
+
+        $input  = [ 'hello' => true ];
+        $this->assertEquals($input, Bson::decode(Bson::encode($input)));
+    }
+
     public function testEncodeMoreComplexMixed()
     {
         $input  = [
