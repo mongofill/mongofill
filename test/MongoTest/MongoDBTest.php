@@ -2,7 +2,7 @@
 
 class MongoDBTest extends BaseTest
 {
-    function testListCollections()
+    public function testListCollections()
     {
         $data = ['foo' => 'bar'];
 
@@ -17,7 +17,7 @@ class MongoDBTest extends BaseTest
         $this->assertSame('testDB', $collections[0]->getName());
     }
 
-    function testListCollectionsWithSystem()
+    public function testListCollectionsWithSystem()
     {
         $data = ['foo' => 'bar'];
         
@@ -32,5 +32,13 @@ class MongoDBTest extends BaseTest
         $this->assertInstanceOf('MongoCollection', $collections[1]);
         $this->assertSame('system.indexes', $collections[0]->getName());
         $this->assertSame('testDB', $collections[1]->getName());
+    }
+
+    public function testCommand()
+    {
+        $admin = $this->getTestClient()->selectDB('admin');
+
+        $cmd = $admin->command(['buildinfo' => true]);
+        $this->assertArrayHasKey('version', $cmd);
     }
 }

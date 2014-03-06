@@ -86,7 +86,7 @@ class MongoDB
     public function command($cmd)
     {
         $response = $this->protocol->opQuery("{$this->name}.\$cmd", $cmd, 0, -1, 0);
-        return $response['result'];
+        return $response['result'][0];
     }
 
     /**

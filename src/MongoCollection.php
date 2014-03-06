@@ -52,8 +52,8 @@ class MongoCollection
             'skip' => $skip
         ]);
 
-        if(isset($result[0]['ok'])){
-            return (int) $result[0]['n'];
+        if(isset($result['ok'])){
+            return (int) $result['n'];
         }
 
         return false;
@@ -88,7 +88,7 @@ class MongoCollection
 
     public function drop()
     {
-        $this->db->command(array('drop'=>$this->name));
+        $this->db->command(['drop' => $this->name]);
     }
 
     /**
@@ -192,8 +192,8 @@ class MongoCollection
             'scandata' => $scanData
         ]);
         
-        if(!empty($result[0])){
-            return $result[0];
+        if(!empty($result)){
+            return $result;
         }
 
         return false;
