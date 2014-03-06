@@ -11,10 +11,32 @@ Community
 You can catch us on IRC on Freenode channel #mongofill
 
 
-Development
------------
+Contributing
+---------
 
 Please push tests, ensuring compatibility with the official Mongo extension,
 that are not passing yet, into the  "compat/not-passing" branch.
 
-Contributions are greatly appreciated, including corrections of my english ;)
+Contributions are greatly appreciated, including corrections of our english ;)
+
+To ensure a consistent code base, you should make sure the code follows the PSR2 coding standards. We suggest use php-cs-fixer with your code before make the pull request with this flags: `php-cs-fixer fix . --level=all`
+
+### Running the PHPUnit tests
+
+Tests are in the `test` folder.
+To run them, you need PHPUnit.
+
+``` bash
+phpunit --configuration phpunit.xml.dist
+```
+
+### Running the native mongo-php-driver tests
+
+You can find helper script at `test/native/helper.sh`. Your system must have installed: mongodb, git, phpize and autotools
+
+``` bash
+cd test/native/
+./helper.sh setup
+./helper.sh boot
+./helper.sh run
+```
