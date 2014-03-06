@@ -6,11 +6,49 @@ class MongoCollectionTest extends BaseTest
     {
         $coll = $this->getTestDB()->selectCollection('testInsert');
         
-        $data = ['foo' => 'bar' ];
+        $data = [
+            'foo' => 'bar',
+            'boolean' => false
+        ];
+        
         $coll->insert($data);
 
         $this->assertCount(1, $coll->find());
         $this->assertEquals($data, $coll->findOne());
+    }
+
+    public function testBatchInsert()
+    {
+        $coll = $this->getTestDB()->selectCollection('testInsert');
+        
+        $data = [
+            ['foo' => 'bar'],
+            ['foo' => 'qux']
+        ];
+
+        $coll->batchInsert($data);
+
+        $this->assertCount(2, $coll->find());
+        $this->assertEquals($data[0], $coll->findOne());
+        $this->assertInstanceOf('MongoId', $data[0]['_id']);
+        $this->assertInstanceOf('MongoId', $data[1]['_id']);
+    }
+
+    public function testBatchInsertWithKeys()
+    {
+        $coll = $this->getTestDB()->selectCollection('testInsert');
+        
+        $data = [
+            'foo' => ['foo' => 'bar'],
+            'bar' => ['foo' => 'qux']
+        ];
+
+        $coll->batchInsert($data);
+
+        $this->assertCount(2, $coll->find());
+        $this->assertEquals($data['foo'], $coll->findOne());
+        $this->assertInstanceOf('MongoId', $data['foo']['_id']);
+        $this->assertInstanceOf('MongoId', $data['bar']['_id']);
     }
 
     public function testInsertWithId()

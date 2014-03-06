@@ -47,9 +47,9 @@ class MongoCollection
     {
         $result = $this->db->command([
             'count' => $this->name,
-            'query'=> $query, 
+            'query' => $query, 
             'limit' => $limit,
-            'skip'=>$skip
+            'skip' => $skip
         ]);
 
         if(isset($result[0]['ok'])){
@@ -110,7 +110,8 @@ class MongoCollection
 
     public function insert(array &$document, array $options = [])
     {
-        $this->batchInsert([&$document], $options);
+        $documents = [&$document];
+        $this->batchInsert($documents, $options);
 
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
@@ -124,15 +125,9 @@ class MongoCollection
      * @returns bool|array
      */
 
-    public function batchInsert(array $documents, array $options = [])
+    public function batchInsert(array &$documents, array $options = [])
     {
-        $count = count($documents);
-        for ($i=0; $i < $count; $i++) { 
-            if (!isset($documents[$i]['_id'])) {
-                $documents[$i]['_id'] = new MongoId();
-            }
-        }
-
+        $this->createMongoIdsIfMissing($documents);
         $this->protocol->opInsert($this->fqn, $documents, false);
 
         // Fake response for async insert -
@@ -140,6 +135,17 @@ class MongoCollection
         return true;
     }
 
+    private function createMongoIdsIfMissing(array &$documents)
+    {
+        $count = count($documents);
+        $keys = array_keys($documents);
+        for ($i=0; $i < $count; $i++) { 
+            if (!isset($documents[$keys[$i]]['_id'])) {
+                $documents[$keys[$i]]['_id'] = new MongoId();
+            }
+        }
+    }
+    
     /**
      * @param       array $criteria Query specifing objects to be updated
      * @param       array $new_object document to update
