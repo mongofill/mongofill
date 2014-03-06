@@ -2,22 +2,19 @@
 
 class MongoCursorTest extends BaseTest
 {
-    public function testFindFewDocuments()
+    public function setUp()
     {
-        $this->findNDocuments(5);
+        $this->coll = $this->getTestDB()->selectCollection('testFindFewDocuments');
     }
 
-    public function testFindManyDocuments()
+    public function tearDown()
     {
-        $this->findNDocuments(500);
+        $this->coll->drop();
     }
 
-    private function findNDocuments($n)
+    public function createNDocuments($n)
     {
-        $coll = $this->getTestDB()->selectCollection('testFindFewDocuments');
         $documents = [];
-
-        // prepare documents to insert
         for($i = 1; $i <= $n; $i++) {
             $documents[] = [
                 '_id' => str_pad($i, 24, '0', STR_PAD_LEFT),
@@ -26,10 +23,42 @@ class MongoCursorTest extends BaseTest
         }
 
         // insert them
-        $coll->batchInsert($documents);
+        $this->coll->batchInsert($documents);
+    }
 
-        // load them back and check result
-        $result = iterator_to_array($coll->find());
-        $this->assertEquals($documents, $result);
+    public function testFindFewDocuments()
+    {
+        $this->createNDocuments(5);
+        $this->assertCount(5, $this->coll->find());
+    }
+
+    public function testFindManyDocuments()
+    {
+        $this->createNDocuments(500);
+        $this->assertCount(500, $this->coll->find());
+
+        $i=0;
+        foreach ($this->coll->find() as $key => $record) {
+            $this->assertSame($key, $record['_id']);
+            $this->assertSame(++$i, $record['foo']);
+        }
+    }
+
+    public function testCount()
+    {
+        $this->createNDocuments(500);
+        $this->assertSame(500, $this->coll->find()->limit(10)->count());
+    }
+
+    public function testCountFoundOnlyUnderGetMore()
+    {
+        $this->createNDocuments(55);
+        $this->assertSame(55, $this->coll->find()->count(true));
+    }
+
+    public function testCountFoundOnlyOverGetMore()
+    {
+        $this->createNDocuments(500);
+        $this->assertSame(500, $this->coll->find()->count(true));
     }
 }

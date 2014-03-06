@@ -42,7 +42,7 @@ class MongoClient
      * @param string $server
      * @param null|array $options
      */
-    function __construct($server = 'mongodb://localhost:27017', array $options = [])
+    public function __construct($server = 'mongodb://localhost:27017', array $options = [])
     {
         if (!$options) {
             $options = ['connect' => true];
@@ -78,6 +78,14 @@ class MongoClient
             $this->protocol = new Protocol($socket);
         }
         return true;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return (string)$this->host . ':' . (string)$this->port;
     }
 
     /**

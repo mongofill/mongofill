@@ -20,7 +20,7 @@ class BsonTest extends \PHPUnit_Framework_TestCase
                 new MongoInt32(1986),
             ]
         ];
-        $expect = "\x31\x00\x00\x00\x03BSON\x00\x26\x00\x00\x00\x020\x00\x08"
+        $expect = "\x31\x00\x00\x00\x04BSON\x00\x26\x00\x00\x00\x020\x00\x08"
                  ."\x00\x00\x00awesome\x00\x011\x00\x33\x33\x33\x33\x33\x33\x14"
                  ."\x40\x102\x00\xc2\x07\x00\x00\x00\x00";
         $this->assertEquals($expect,  Bson::encode($input));
@@ -77,6 +77,13 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(34359738368, $doc['foo']);
     }
 
+    public function testEncodeDecodeNull()
+    {
+        $bson = Bson::encode([ 'null' => null ]);
+        $out = Bson::decode($bson)['null'];
+        $this->assertNull($out);
+    }
+
     public function testEncodeDecodeBinData()
     {
         // subtype 0
@@ -93,4 +100,43 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($data, $out->bin);
     }
 
+    public function testEncodeTimestamp()
+    {
+        $input = new MongoTimestamp(123, 456);
+        $bson = Bson::encode([ 'ts' => $input ]);
+        $out = Bson::decode($bson)['ts'];
+        $this->assertEquals($input, $out);
+        $this->assertEquals('1100000011747300c80100007b00000000', bin2hex($bson));
+    }
+
+    public function testEncodeDecodeMongoRegex()
+    {
+        $regex  = "/foo/iu";
+        $input = new MongoRegex($regex);
+        $bson = Bson::encode([ 'regex' => $input ]);
+        $out = Bson::decode($bson)['regex'];
+ 
+        $this->assertEquals($input, $out);
+    }
+
+    public function testEncodeDecodeArray()
+    {
+        $input = [['foo', 'bar']];
+        $expect = "#\000\000\000\0040\000\033\000\000\000\0020\000\004\000\000\000foo\000\0021\000\004\000\000\000bar\000\000\000";
+        $this->assertEquals($expect,  Bson::encode($input));
+    }
+
+    public function testEncodeDecodeDictionary()
+    {
+        $input = [['foo' => 1, 'bar' => 2]];
+        $expect = "'\000\000\000\0030\000\037\000\000\000\022foo\000\001\000\000\000\000\000\000\000\022bar\000\002\000\000\000\000\000\000\000\000\000";
+        $this->assertEquals($expect,  Bson::encode($input));
+    } 
+
+    public function testIsDocument()
+    {
+        $this->assertFalse(Bson::isDocument(['foo']));
+        $this->assertTrue(Bson::isDocument(['foo' => 1]));
+        $this->assertTrue(Bson::isDocument(['foo', 'bar' => 1]));
+    }  
 }

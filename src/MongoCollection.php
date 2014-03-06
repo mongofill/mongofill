@@ -18,7 +18,7 @@ class MongoCollection
     /**
      * @var MongoDB
      */
-    public $db;
+    private $db;
 
     /**
      * @var MongoClient
@@ -45,11 +45,18 @@ class MongoCollection
 
     public function count($query=[], $limit=0, $skip=0 )
     {
-        $result = $this->db->command( array( 'count'=>$this->name, 'query'=> $query, 'limit' => $limit, 'skip'=>$skip));
-        if(!empty($result[0]['ok'])){
-            return $result[0]['n'];
+        $result = $this->db->command([
+            'count' => $this->name,
+            'query'=> $query, 
+            'limit' => $limit,
+            'skip'=>$skip
+        ]);
+
+        if(isset($result[0]['ok'])){
+            return (int) $result[0]['n'];
         }
-        return FALSE;
+
+        return false;
     }
 
     /**
@@ -101,13 +108,13 @@ class MongoCollection
      * @returns bool|array
      */
 
-    public function insert(array $a, array $options = [])
+    public function insert(array &$document, array $options = [])
     {
-        $this->batchInsert([ $a ], $options);
+        $this->batchInsert([&$document], $options);
 
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
-        return TRUE;
+        return true;
     }
 
     /**
@@ -117,23 +124,20 @@ class MongoCollection
      * @returns bool|array
      */
 
-    public function batchInsert(array $a, array $options = [])
+    public function batchInsert(array $documents, array $options = [])
     {
-        $this->protocol->opInsert($this->fqn, $a, false);
+        $count = count($documents);
+        for ($i=0; $i < $count; $i++) { 
+            if (!isset($documents[$i]['_id'])) {
+                $documents[$i]['_id'] = new MongoId();
+            }
+        }
+
+        $this->protocol->opInsert($this->fqn, $documents, false);
 
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
-        return TRUE;
-    }
-
-    /**
-     * __toString return full name of collections.
-     * @return string
-     */
-
-    public function  __toString()
-    {
-        return $this->fqn;
+        return true;
     }
 
     /**
@@ -143,37 +147,80 @@ class MongoCollection
      *
      * @return bool
      */
-
-    public function update(array $criteria , array $new_object , array$options = [] )
+    public function update(array $criteria, array $newObject, array $options = [])
     {
-         $this->protocol->opUpdate($this->fqn, $criteria, $new_object, $options);
+         $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
     }
 
-    public function save($a, array $options = [])
+    public function save($document, array $options = [])
     {
-        if(empty($a)){
-            return FALSE;
+        if(!$document){
+            return false;
         }
-        if(!empty($a['_id'])){
-            $this->update(array('_id' => $a['_id']), $a, $options );
+
+        if(!isset($document['_id'])){
+            $this->update(['_id' => $document['_id']], $document, $options);
         } else {
-            return $this->insert($a, $options);
+            return $this->insert($document, $options);
         }
+
         //TODO: Handle timeout
-        return TRUE;
+        return true;
+    }
+
+    public function remove(array $criteria = [], array $options = [])
+    {
+        $this->protocol->opDelete($this->fqn, $criteria, $options);
     }
 
     /**
-     * @param boolean $scan_data Enable scan of base class
+     * @param boolean $scanData Enable scan of base class
      * @param boolean $full
      */
 
-    public function validate($full=FALSE, $scan_data = FALSE)
+    public function validate($full = false, $scanData = false)
     {
-        $result =  $this->db->command(array('validate'=>$this->name, 'full'=>$full, 'scandata'=>$scan_data));
+        $result =  $this->db->command([
+            'validate' => $this->name, 
+            'full' => $full, 
+            'scandata' => $scanData
+        ]);
+        
         if(!empty($result[0])){
             return $result[0];
         }
-        return FALSE;
+
+        return false;
+    }
+
+    /**
+     * @var string|array $keys
+     * @return string|null
+     */
+    protected static function toIndexString($keys)
+    {
+        if (is_string($keys)) {
+          return str_replace('.', '_', $keys . '_1');
+        } else if (is_array($keys) || is_object($keys)) {
+          $keys = (array)$keys;
+          foreach ($keys as $k => $v) {
+            $keys[$k] = str_replace('.', '_', $k . '_' . $v);
+          }
+
+          return implode('_', $keys);
+        } 
+        
+        trigger_error('MongoCollection::toIndexString(): The key needs to be either a string or an array', E_USER_WARNING);
+        
+        return null;
+    }
+
+    /**
+     * __toString return full name of collections.
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->fqn;
     }
 }
