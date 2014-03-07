@@ -186,4 +186,68 @@ class MongoCollectionTest extends BaseTest
         $this->assertEquals('notbar', $record['foo']);
     }
 
+    public function testEnsureIndex()
+    {
+        $data = ['foo'=>'bar'];
+
+        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $coll->insert($data);
+
+        $index = ['foo' => -1, 'bar' => 1];
+
+        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $coll->deleteIndexes();
+
+        $indexes = $coll->getIndexInfo();
+
+        $this->assertCount(1, $indexes);
+    }
+
+    public function testEnsureDeleteIndex()
+    {
+        $data = ['foo'=>'bar'];
+
+        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $coll->insert($data);
+
+        $index = ['foo' => -1, 'bar' => 1];
+
+        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $this->assertTrue($coll->ensureIndex($index));
+        $this->assertCount(2, $coll->getIndexInfo());
+
+        $coll->deleteIndex($index);
+        $this->assertCount(1, $coll->getIndexInfo());
+    }
+
+    public function testToIndexString()
+    {
+        $expected = 'foo_-1_bar_1';
+        $index = ['foo' => -1, 'bar' => 1];
+        
+        $result = MongoCollectionWrapper::toIndexString($index);
+        $this->assertSame($expected, $result);
+    }
+
+    public function testToIndexStringText()
+    {
+        $expected = 'qux_text_baz_text';
+        $index = [
+            'foo' => -1, 
+            'bar' => 1,
+            'weights' => [
+                'qux' => 30,
+                'baz' => 10
+            ]
+        ];
+        
+        $result = MongoCollectionWrapper::toIndexString($index);
+        $this->assertSame($expected, $result);
+    }
+}
+
+class MongoCollectionWrapper extends MongoCollection {
+    static public function toIndexString($keys) {
+        return parent::toIndexString($keys);
+    }
 }

@@ -14,7 +14,6 @@ class MongoCollection
      */
     private $name;
 
-
     /**
      * @var MongoDB
      */
@@ -43,7 +42,7 @@ class MongoCollection
         $this->protocol = $this->client->_getProtocol();
     }
 
-    public function count($query=[], $limit=0, $skip=0 )
+    public function count(array $query = [], $limit = 0, $skip = 0)
     {
         $result = $this->db->command([
             'count' => $this->name,
@@ -107,7 +106,6 @@ class MongoCollection
      * @param array $options
      * @returns bool|array
      */
-
     public function insert(array &$document, array $options = [])
     {
         $documents = [&$document];
@@ -124,7 +122,6 @@ class MongoCollection
      * @param array $options
      * @returns bool|array
      */
-
     public function batchInsert(array &$documents, array $options = [])
     {
         $this->createMongoIdsIfMissing($documents);
@@ -183,7 +180,6 @@ class MongoCollection
      * @param boolean $scanData Enable scan of base class
      * @param boolean $full
      */
-
     public function validate($full = false, $scanData = false)
     {
         $result =  $this->db->command([
@@ -199,26 +195,117 @@ class MongoCollection
         return false;
     }
 
-    /**
-     * @var string|array $keys
-     * @return string|null
-     */
     protected static function toIndexString($keys)
     {
         if (is_string($keys)) {
-          return str_replace('.', '_', $keys . '_1');
-        } else if (is_array($keys) || is_object($keys)) {
-          $keys = (array)$keys;
-          foreach ($keys as $k => $v) {
-            $keys[$k] = str_replace('.', '_', $k . '_' . $v);
-          }
+            return self::toIndexStringFromString($keys);
+        } else if (is_object($keys)) {
+            $keys = get_object_vars($keys);
+        }
 
-          return implode('_', $keys);
-        } 
-        
+        if (is_array($keys)) {
+            return self::toIndexStringFromArray($keys);
+        }
+            
         trigger_error('MongoCollection::toIndexString(): The key needs to be either a string or an array', E_USER_WARNING);
         
         return null;
+    }
+
+    private static function toIndexStringFromString($keys)
+    {
+        return str_replace('.', '_', $keys . '_1');
+    }
+
+    private static function toIndexStringFromArray(array $keys)
+    {
+        $prefValue = null;
+        if (isset($keys['weights'])) {
+            $keys = $keys['weights'];
+            $prefValue = 'text';
+        }
+
+        $keys = (array) $keys;
+        foreach ($keys as $key => $value) {
+            if ($prefValue) {
+                $value = $prefValue;
+            }
+
+            $keys[$key] = str_replace('.', '_', $key . '_' . $value);
+        }
+
+        return implode('_', $keys);  
+    }
+
+    public function deleteIndex($keys)
+    {
+        $cmd = [
+            'deleteIndexes' => $this->name, 
+            'index' => self::toIndexString($keys)
+        ];
+
+        return $this->db->command($cmd);  
+    }
+
+    public function deleteIndexes()
+    {
+        return (bool) $this->db->getIndexesCollection()->drop();
+    }
+
+    public function ensureIndex($keys, array $options = [])
+    {
+        if (!is_array($keys)) {
+            $keys = [$keys => 1];
+        }
+
+        $index = [
+            'ns' => $this->fqn,
+            'name' => self::toIndexString($keys, $options),
+            'key' => $this->fixNumberLongIndexes($keys)
+        ];
+
+        $insertOptions = [];
+        if (isset($options['safe'])) {
+            $insertOptions['safe'] = $options['safe'];
+        }
+
+        if (isset($options['w'])) {
+            $insertOptions['w'] = $options['w'];
+        }
+
+        if (isset($options['fsync'])) {
+            $insertOptions['fsync'] = $options['fsync'];
+        }
+
+        if (isset($options['timeout'])) {
+            $insertOptions['timeout'] = $options['timeout'];
+        }
+
+        $index = array_merge($index, $options);
+
+        return (bool) $this->db->getIndexesCollection()->insert(
+            $index, 
+            $insertOptions
+        );        
+    }
+
+    private function fixNumberLongIndexes(array $keys)
+    {
+        $fixedKeys = [];
+        foreach ($keys as $key => $value) {
+            $fixedKeys[$key] = (float) $value;
+        }
+
+        return $fixedKeys;
+    }
+
+    public function getIndexInfo()
+    {
+        $indexes = $this->db->getIndexesCollection()->find([
+            'ns' => $this->fqn
+        ]);
+
+        return iterator_to_array($indexes);
     }
 
     /**

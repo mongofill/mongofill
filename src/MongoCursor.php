@@ -240,7 +240,6 @@ class MongoCursor implements Iterator
     public function current()
     {
         $this->fetchDocumentsIfNeeded();
-
         return $this->documents[$this->currKey];
     }
 
@@ -274,6 +273,10 @@ class MongoCursor implements Iterator
     {
         $record = $this->current();
         
+        if (!isset($record['_id'])) {
+            return $this->currKey;
+        }
+
         return (string) $record['_id'];
     }
 

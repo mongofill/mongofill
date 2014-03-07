@@ -5,6 +5,7 @@ use Mongofill\Protocol;
 class MongoDB
 {
     const NAMESPACES_COLLECTION = 'system.namespaces';
+    const INDEX_COLLECTION = 'system.indexes';
 
     /**
      * @var string
@@ -133,6 +134,11 @@ class MongoDB
         $dot = strpos($namespace, '.');
 
         return substr($namespace, $dot + 1);
+    }
+
+    public function getIndexesCollection()
+    {
+        return $this->selectCollection(self::INDEX_COLLECTION);
     }
 
     public function __toString()
