@@ -11,3 +11,5 @@ before_script:
   - composer install --dev --no-interaction --prefer-source
 
 
+notifications:
+  irc: "chat.freenode.net#mongofill"
