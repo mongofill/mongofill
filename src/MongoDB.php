@@ -1,4 +1,4 @@
-<?php
+    <?php
 
 use Mongofill\Protocol;
 
@@ -144,5 +144,10 @@ class MongoDB
     public function __toString()
     {
         return $this->name;
+    }
+
+    public function getGridFS($prefix = 'fs')
+    {
+        return new MongoGridFS($this, $prefix);
     }
 }
