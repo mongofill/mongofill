@@ -4,21 +4,32 @@
  * Utilities for storing and retrieving files from the database.   
  */
 class MongoGridFS {
+    const DEFAULT_CHUNK_SIZE = 262144; //256k
 
     /**
-     * @var string
+     * @var MongoCollection
      */
-    private $prefix;
+    public $chunks;
 
     /**
-     * @var string
+     * @var MongoCollection
      */
-    private $chunks;
+    private $files;
 
     /**
      * @var MongoDB
      */
     private $db;
+
+    /**
+     * @var string
+     */
+    protected $filesName;
+
+    /**
+     * @var string
+     */
+    protected $chunksName;
 
     /**
      * Creates new file collections
@@ -30,8 +41,11 @@ class MongoGridFS {
     public function __construct(MongoDB $db, $prefix = 'fs', $chunks = 'fs')
     {
         $this->db = $db;
-        $this->files = $db->selectCollection($prefix . '.files');
-        $this->chunks = $db->selectCollection($prefix . '.chunks');
+        $this->filesName = $prefix . '.files';
+        $this->chunksName = $prefix . '.chunks';
+
+        $this->files = $db->selectCollection($this->filesName);
+        $this->chunks = $db->selectCollection($this->chunksName);
     }
 
     /**
@@ -150,7 +164,68 @@ class MongoGridFS {
      */
     public function storeFile($filename, array $metadata = [], array $options = [])
     {
-        throw new Exception('Not implemented');
+        $this->throwExceptionIfFilenameNotExists($filename);
+
+        $chunkSize = self::DEFAULT_CHUNK_SIZE;
+        if (isset($options['chunkSize'])) {
+            $chunkSize = $options['chunkSize'];
+        }
+
+        $file = $this->insertFile($filename, $metadata, $chunkSize);
+        $this->insertChunks($filename, $file['_id'], $chunkSize);
+
+        return $file['_id'];
+    }
+
+    private function throwExceptionIfFilenameNotExists($filename)
+    {
+        if (!file_exists($filename)) {
+            throw new MongoException(sprintf(
+                'error setting up file: %s', 
+                $filename
+            ));
+        }
+    }
+    
+    private function insertFile($filename, array $metadata, $chunkSize)
+    {
+        $record = [
+            'metadata' => $metadata,
+            'filename' => basename($filename),
+            'uploadDate' => new MongoDate(),
+            'chunkSize' => $chunkSize,
+            'length' => filesize($filename),
+            'md5' => md5_file($filename)
+        ];
+
+        $this->files->insert($record);
+
+        return $record;
+    }
+
+    private function insertChunks($filename, MongoId $id, $chunkSize)
+    {
+        $handle = fopen($filename, 'r');
+
+        $n = 0;
+        while (!feof($handle)) {
+            $this->insertChunk($id, $handle, $chunkSize, $n++);
+        }
+
+        fclose($handle);
+    }
+
+    private function insertChunk($filesId, $handle, $chunkSize, $n)
+    {
+        $data = fread($handle, $chunkSize);
+
+        $record = [
+            'files_id' => $filesId,
+            'data' => new MongoBinData($data),
+            'n' => $n
+        ];
+
+        return $this->chunks->insert($record);
     }
 
     /**

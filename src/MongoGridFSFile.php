@@ -8,7 +8,7 @@ class MongoGridFSFile
     /**
      * @var array
      */
-    private $file;
+    public $file;
     
     /**
      * @var MongoGridFS
@@ -56,7 +56,27 @@ class MongoGridFSFile
      */
     public function getBytes()
     {
-        throw new Exception('Not implemented');
+        $this->trowExceptionIfInvalidLength();
+
+        $bytes = '';
+
+        $query = ['files_id' => $this->file['_id']];
+        $sort = ['n' => 1];
+
+        $chunks = $this->gridfs->chunks->find($query)->sort($sort);
+        foreach ($chunks as $chunk) {
+            $bytes .= $chunk['data']->bin;
+        };
+
+        return $bytes;
+    }
+
+    private function trowExceptionIfInvalidLength()
+    {
+        if (!isset($this->file['length'])) {
+            throw new MongoException('couldn\'t find file size', 14);
+            
+        }
     }
 
     /**
@@ -80,6 +100,21 @@ class MongoGridFSFile
      */
     public function write($filename = null)
     {
-        throw new Exception('Not implemented');
+        if (!$filename) {
+            $this->trowExceptionIfInvalidFilename();
+            $filename = $this->file['filename'];
+        }
+
+        $bytes = $this->getBytes();
+        
+        return file_put_contents($filename, $bytes);
+    }
+
+    private function trowExceptionIfInvalidFilename()
+    {
+        if (!isset($this->file['filename'])) {
+            throw new MongoException('Cannot find filename', 15);
+            
+        }
     }
 }
