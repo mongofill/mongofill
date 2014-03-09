@@ -114,7 +114,6 @@ class MongoGridFSFile
     {
         if (!isset($this->file['filename'])) {
             throw new MongoException('Cannot find filename', 15);
-            
         }
     }
 }

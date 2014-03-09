@@ -56,7 +56,7 @@ class MongoGridFS {
      */
     public function delete($id)
     {
-        throw new Exception('Not implemented');
+        return $this->remove(['_id' => $id]); 
     }
 
     /**
@@ -66,7 +66,8 @@ class MongoGridFS {
      */
     public function drop()
     {
-        throw new Exception('Not implemented');
+        $this->chunks->drop();
+        $this->files->drop();
     }
 
     /**
@@ -113,7 +114,7 @@ class MongoGridFS {
      */
     public function get($id)
     {
-        throw new Exception('Not implemented');
+        return $this->findOne(['_id' => $id]);
     }
 
     /**
@@ -125,7 +126,7 @@ class MongoGridFS {
      */
     public function put($filename, array $metadata = [])
     {
-        throw new Exception('Not implemented');
+        return $this->storeFile($filename, $metadata);
     }
 
     /**
@@ -137,7 +138,27 @@ class MongoGridFS {
      */
     public function remove(array $criteria = [],  array $options = [])
     {
-        throw new Exception('Not implemented');
+        //TODO: implement $options
+
+        $files = $this->files->find($criteria, ['_id' => 1]);
+        $ids = [];
+        foreach ($files as $record) {
+            $ids[] = $record['_id'];
+        }
+
+        if (!$ids) {
+            return false;
+        }
+
+        $this->files->remove(['_id' => [
+            '$in' => $ids
+        ]]);
+
+        $this->chunks->remove(['files_id' => [
+            '$in' => $ids
+        ]]);
+
+        return true;
     }
 
     /**
@@ -151,7 +172,44 @@ class MongoGridFS {
      */
     public function storeBytes($bytes, array $metadata = [], array $options = [])
     {
-        throw new Exception('Not implemented');
+        $chunkSize = self::DEFAULT_CHUNK_SIZE;
+        if (isset($options['chunkSize'])) {
+            $chunkSize = $options['chunkSize'];
+        }
+
+        $file = $this->insertFileFromBytes($bytes, $metadata, $chunkSize);
+        $this->insertChunksFromBytes($bytes, $file['_id'], $chunkSize);
+
+        return $file['_id'];
+    }
+
+    private function insertFileFromBytes($bytes, array $metadata, $chunkSize)
+    {
+        $record = [
+            'uploadDate' => new MongoDate(),
+            'chunkSize' => $chunkSize,
+            'length' => mb_strlen($bytes, '8bit'),
+            'md5' => md5($bytes)
+        ];
+
+        $record = array_merge($metadata, $record);
+        $this->files->insert($record);
+
+        return $record;
+    }
+
+    private function insertChunksFromBytes($bytes, $id, $chunkSize)
+    {
+        $length = mb_strlen($bytes, '8bit');
+        $offset = 0;
+        $n = 0;
+
+        while($offset < $length) {
+            $data = mb_substr($bytes, $offset, $chunkSize, '8bit');
+            $this->insertChunk($id, $data, $n++);
+
+            $offset += $chunkSize;
+        }
     }
 
     /**
@@ -171,8 +229,8 @@ class MongoGridFS {
             $chunkSize = $options['chunkSize'];
         }
 
-        $file = $this->insertFile($filename, $metadata, $chunkSize);
-        $this->insertChunks($filename, $file['_id'], $chunkSize);
+        $file = $this->insertFileFromFilename($filename, $metadata, $chunkSize);
+        $this->insertChunksFromFilename($filename, $file['_id'], $chunkSize);
 
         return $file['_id'];
     }
@@ -187,10 +245,9 @@ class MongoGridFS {
         }
     }
     
-    private function insertFile($filename, array $metadata, $chunkSize)
+    private function insertFileFromFilename($filename, array $metadata, $chunkSize)
     {
         $record = [
-            'metadata' => $metadata,
             'filename' => basename($filename),
             'uploadDate' => new MongoDate(),
             'chunkSize' => $chunkSize,
@@ -198,27 +255,31 @@ class MongoGridFS {
             'md5' => md5_file($filename)
         ];
 
+        if (isset($metadata['filename'])) {
+            $record['filename'] = $metadata['filename'];
+        }
+
+        $record = array_merge($metadata, $record);
         $this->files->insert($record);
 
         return $record;
     }
 
-    private function insertChunks($filename, MongoId $id, $chunkSize)
+    private function insertChunksFromFilename($filename, MongoId $id, $chunkSize)
     {
         $handle = fopen($filename, 'r');
 
         $n = 0;
         while (!feof($handle)) {
-            $this->insertChunk($id, $handle, $chunkSize, $n++);
+            $data = stream_get_contents($handle, $chunkSize);
+            $this->insertChunk($id, $data, $n++);
         }
 
         fclose($handle);
     }
 
-    private function insertChunk($filesId, $handle, $chunkSize, $n)
+    private function insertChunk($filesId, $data, $n)
     {
-        $data = fread($handle, $chunkSize);
-
         $record = [
             'files_id' => $filesId,
             'data' => new MongoBinData($data),
@@ -239,9 +300,48 @@ class MongoGridFS {
      *   filename used.
      * @return mixed -
      */
-    public function storeUpload($name, array $metadata)
+    public function storeUpload($name, array $metadata  = [])
     {
-        throw new Exception('Not implemented');
+        $this->throwExceptionIfMissingUpload($name);
+        $this->throwExceptionIfMissingTmpName($name);
+
+        $uploaded = $_FILES[$name];
+        $uploaded['tmp_name'] = (array) $uploaded['tmp_name'];
+        $uploaded['name'] = (array) $uploaded['name'];
+
+        $results = [];
+        foreach ($uploaded['tmp_name'] as $key => $file) {
+            $metadata['filename'] = basename($uploaded['name'][$key]);
+            $results[] = $this->storeFile($file, $metadata);
+        }
+
+        return $results;
     }
 
+    private function throwExceptionIfMissingUpload($name)
+    {
+        if (isset($_FILES[$name])) {
+            return;
+        }
+
+        throw new MongoGridFSException(sprintf(
+            'could not find uploaded file %s',
+            $name
+        ), 11);
+    }
+
+    private function throwExceptionIfMissingTmpName($name)
+    {
+        if (isset($_FILES[$name]['tmp_name']) && (
+            is_array($_FILES[$name]['tmp_name']) ||
+            is_string($_FILES[$name]['tmp_name'])
+        )) {
+            return;
+        }
+
+        throw new MongoGridFSException(
+            'tmp_name was not a string or an array', 
+            13
+        );
+    }
 }
