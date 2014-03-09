@@ -211,7 +211,7 @@ class MongoCursor implements Iterator
 
     private function countQuerying()
     {
-        $ns = explode('.', $this->fcn);
+        $ns = explode('.', $this->fcn, 2);
 
         $query = [
             'count' => $ns[1],
@@ -240,6 +240,10 @@ class MongoCursor implements Iterator
     public function current()
     {
         $this->fetchDocumentsIfNeeded();
+        if (!isset($this->documents[$this->currKey])) {
+            return null;
+        }
+        
         return $this->documents[$this->currKey];
     }
 
