@@ -1,6 +1,6 @@
 <?php
 
-class MongoDbRef
+class MongoDBRef
 {
 
     private function __construct($collection, $id, $db = null)
@@ -14,7 +14,7 @@ class MongoDbRef
 
     public static function create($collection, $id, $database = null)
     {
-        return new MongoDbRef($collection, $id, $database);
+        return new MongoDBRef($collection, $id, $database);
     }
 
     public static function isRef($ref)
@@ -60,8 +60,8 @@ class MongoDbRef
             if (!is_string($refdb)) {
                 throw new MongoException('MongoDBRef::get: $db field of $ref must be a string', 11);
             }
-            if ($refdb != $db->getDB()) {
-                $db = $db->link->selectDB($refdb);
+            if ($refdb != (string)$db) {
+                $db = $db->_getClient()->$refdb;
             }
         }
         $collection = new MongoCollection($db, $ns);
