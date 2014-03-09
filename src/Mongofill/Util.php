@@ -4,11 +4,12 @@ namespace Mongofill {
 
 class Util
 {
-
     public static function unpack($format, $data, &$offset, $length)
     {
-        $vars = unpack($format, substr($data, $offset, $length));
+        $bin = substr($data, $offset, $length);
+        $vars = unpack($format, $bin);
         $offset += $length;
+
         return $vars;
     }
 
