@@ -24,12 +24,12 @@ class Bson
     const ETYPE_SYMBOL   = 0x0e;
     const ETYPE_TIMESTAMP= 0x11;
 
-    static public function encode(array $value)
+    public static function encode(array $value)
     {
         return self::encDocument($value);
     }
 
-    static public function decode($data)
+    public static function decode($data)
     {
         $offset = 0;
         $doc = self::decDocument($data, $offset);
@@ -37,16 +37,16 @@ class Bson
         return $doc;
     }
 
-    static private function encElement($name, $value)
+    private static function encElement($name, $value)
     {
-        switch(true) {
+        switch (true) {
             case $value instanceof \MongoId:
                 $bin = hex2bin($value);
                 $sig = self::ETYPE_ID;
                 if (strlen($bin) != 12) throw new \RuntimeException('Invalid MongoId value');
                 break;
             case $value instanceof \MongoInt64:
-                $value = (int)(string)$value;
+                $value = (int) (string) $value;
             case is_int($value):
                 $i1 = $value & 0xffffffff;
                 $i2 = ($value >> 32) & 0xffffffff;
@@ -62,7 +62,7 @@ class Bson
                 $sig = self::ETYPE_NULL;
                 break;
             case $value instanceof \MongoInt32:
-                $bin = pack('V', (int)(string)$value);
+                $bin = pack('V', (int) (string) $value);
                 $sig  = self::ETYPE_INT32;
                 break;
             case is_float($value):
@@ -122,7 +122,7 @@ class Bson
         return chr($sig) . "$name\0" . $bin;
     }
 
-    static private function encDocument(array $values)
+    private static function encDocument(array $values)
     {
         $data = '';
         foreach ($values as $key => $value) {
@@ -132,13 +132,13 @@ class Bson
         return pack('Va*', strlen($data)+5, "$data\0");
     }
 
-    static private function decElement($data, &$offset)
+    private static function decElement($data, &$offset)
     {
         $sig = ord($data{$offset});
         $offset++;
         $name = Util::parseCString($data, $offset);
 
-        switch($sig) {
+        switch ($sig) {
             case self::ETYPE_ID:
                 $binId = Util::unpack('a12id', $data, $offset, 12)['id'];
                 $value = new \MongoId(bin2hex($binId));
@@ -158,7 +158,7 @@ class Bson
                 break;
             case self::ETYPE_BOOL:
                 $value = Util::unpack('C', $data, $offset, 1);
-                if($value[1]){
+                if ($value[1]) {
                     $value = true;
                 } else {
                     $value = false;
@@ -216,8 +216,8 @@ class Bson
 
                 if ($len < 0) {
                     throw new \RuntimeException(sprintf(
-                        'invalid binary length for key "%s": %d', 
-                        $name, 
+                        'invalid binary length for key "%s": %d',
+                        $name,
                         $len
                     ), 22);
                 }
@@ -233,13 +233,13 @@ class Bson
         return [$name, $value];
     }
 
-    static public function decDocument($data, &$offset)
+    public static function decDocument($data, &$offset)
     {
         $docLen = Util::unpack('Vlen', $data, $offset, 4)['len'] - 5; // subtract len. and null-terminator
         $document = [];
         $parsedLen = 0;
-       
-        while(0 !== ord($data{$offset})) {
+
+        while (0 !== ord($data{$offset})) {
             $elmLen = $offset;
             $elm = self::decElement($data, $offset);
             $parsedLen += ($offset - $elmLen);
@@ -249,18 +249,19 @@ class Bson
         if ($docLen !== $parsedLen) {
             throw new \RuntimeException(sprintf(
                 'Document length doesn\'t match total size of parsed elements (%d:%d)',
-                $docLen, 
+                $docLen,
                 $parsedLen
             ));
         }
 
         $offset++; // add one byte for document nul-terminator
+
         return $document;
     }
 
-    static public function isDocument(array $document)
+    public static function isDocument(array $document)
     {
-        $i = 0; 
+        $i = 0;
         foreach ($document as $key => $notUsed) {
             if ($key !== $i++) {
                 return true;

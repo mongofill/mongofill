@@ -64,7 +64,7 @@ class Protocol
         $flags = 0;
         $documentBsons = "";
         if ($continueOnError) $flags |= 1;
-        foreach($documents as $document) {
+        foreach ($documents as $document) {
             $documentBsons .= Bson::encode($document);
         }
         $data = pack('Va*a*', $flags, "$fullCollectionName\0", $documentBsons);
@@ -101,14 +101,14 @@ class Protocol
         // process response
         $offset = 0;
         $vars = Util::unpack(
-            'Vflags/V2cursorId/VstartingFrom/VnumberReturned', 
-            $data, 
-            $offset, 
+            'Vflags/V2cursorId/VstartingFrom/VnumberReturned',
+            $data,
+            $offset,
             20
         );
 
         $documents = [];
-        for($i = 0; $i < $vars['numberReturned']; $i++) {
+        for ($i = 0; $i < $vars['numberReturned']; $i++) {
             $documents[] = Bson::decDocument($data, $offset);
         }
 

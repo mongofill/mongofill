@@ -21,6 +21,7 @@ class Util
         }
         $str = substr($data, $offset, $nulPos - $offset);
         $offset = $nulPos + 1;
+
         return $str;
     }
 
@@ -28,6 +29,7 @@ class Util
     {
         $i1 = $value & 0xffffffff;
         $i2 = ($value >> 32) & 0xffffffff;
+
         return pack('V2', $i1, $i2);
     }
 
@@ -37,6 +39,7 @@ class Util
             $vars = Util::unpack('V2i', $i1, $offset, 8);
             extract($vars, EXTR_OVERWRITE);
         }
+
         return $i1 | ($i2 << 32);
     }
 }
