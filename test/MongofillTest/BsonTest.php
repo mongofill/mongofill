@@ -60,11 +60,14 @@ class BsonTest extends \PHPUnit_Framework_TestCase
     public function testEncodeDecodeCode()
     {
         $code  = "var foo = 'bar'";
-        $mcIn = new MongoCode($code);
+        $mcIn = new MongoCode($code, ['a' => 'b']);
         $bson = Bson::encode([ 'code' => $mcIn ]);
+        $expected = "310000000f636f646500260000001000000076617220666f6f203d20276261722700".
+            "0e0000000261000200000062000000";
+        $this->assertEquals($expected, bin2hex($bson));
         $mcOut = Bson::decode($bson)['code'];
         $this->assertEquals($code, $mcOut->__toString());
-        $this->assertEmpty($mcOut->getScope());
+        $this->assertEquals($mcOut->getScope(), ['a' => 'b']);
     }
 
     public function testEncodeDecodeCodeWithScope()
