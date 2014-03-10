@@ -9,11 +9,13 @@ class MongoDBRefTest extends BaseTest
         
         $coll1 = $mongo->selectCollection(TEST_DB, 'dbref');
         $coll1->drop();
-        $coll1->insert($doc = array('_id' => 123, 'x' => 'foo'));
+        $doc = ['_id' => 123, 'x' => 'foo'];
+        $coll1->insert($doc);
 
         $coll2 = $mongo->selectCollection('test2', 'dbref2');
         $coll2->drop();
-        $coll2->insert($doc = array('_id' => 456, 'x' => 'bar'));
+        $doc = ['_id' => 456, 'x' => 'bar'];
+        $coll2->insert($doc);
 
         $result = MongoDBRef::get($db, MongoDBRef::create('dbref', 123));
         $this->assertEquals('foo', $result['x']);
@@ -26,8 +28,8 @@ class MongoDBRefTest extends BaseTest
     {
         $db = $this->getTestDB();
         $this->assertNull(MongoDBRef::get($db, null));
-        $this->assertNull(MongoDBRef::get($db, array()));
-        $this->assertNull(MongoDBRef::get($db, array('$ref' => 'dbref')));
-        $this->assertNull(MongoDBRef::get($db, array('$id' => 123)));
+        $this->assertNull(MongoDBRef::get($db, []));
+        $this->assertNull(MongoDBRef::get($db, ['$ref' => 'dbref']));
+        $this->assertNull(MongoDBRef::get($db, ['$id' => 123]));
     }
 }
