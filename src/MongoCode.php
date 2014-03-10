@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Represents JavaScript code for the database.
+ */
 class MongoCode
 {
     /**
@@ -13,12 +16,16 @@ class MongoCode
     private $scope;
 
     /**
-     * @param string $code
-     * @param array $scope
+     * Creates a new code object
+     *
+     * @param string $code - A string of code.
+     * @param array $scope - The scope to use for the code.
+     *
+     * @return  - Returns a new code object.
      */
-    function __construct($code, array $scope = [])
+    public function __construct($code, array $scope = [])
     {
-        $this->code = (string)$code;
+        $this->code = (string) $code;
         $this->scope = $scope;
     }
 
@@ -27,6 +34,11 @@ class MongoCode
         return $this->scope;
     }
 
+    /**
+     * Returns this code as a string
+     *
+     * @return string - This code, the scope is not returned.
+     */
     public function __toString()
     {
         return $this->code;
