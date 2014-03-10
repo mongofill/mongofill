@@ -2,6 +2,9 @@
 
 use Mongofill\Protocol;
 
+/**
+ * Represents a MongoDB collection.
+ */
 class MongoCollection
 {
     /**
@@ -30,28 +33,55 @@ class MongoCollection
     private $protocol;
 
     /**
-     * @param MongoDB $db
-     * @param string $name
+     * Creates a new collection
+     *
+     * @param MongoDB $db   - Parent database.
+     * @param string  $name -
+     *
+     * @return - Returns a new collection object.
      */
-    function __construct(MongoDB $db, $name)
+    public function __construct(MongoDB $db, $name)
     {
-        $this->db       = $db;
-        $this->name     = $name;
-        $this->fqn      = $db->_getFullCollectionName($name);
-        $this->client   = $db->_getClient();
+        $this->db = $db;
+        $this->name = $name;
+        $this->fqn = $db->_getFullCollectionName($name);
+        $this->client = $db->_getClient();
         $this->protocol = $this->client->_getProtocol();
     }
 
+    /**
+     * Gets a collection
+     *
+     * @param string $name - The next string in the collection name.
+     *
+     * @return MongoCollection - Returns the collection.
+     */
+    public function __get($name)
+    {
+        return $this->db->selectCollection($this->name . '.' . $name);
+    }
+
+    /**
+     * Counts the number of documents in this collection
+     *
+     * @param array $query - Associative array or object with fields to
+     *   match.
+     * @param int $limit - Specifies an upper limit to the number returned.
+     * @param int $skip  - Specifies a number of results to skip before
+     *   starting the count.
+     *
+     * @return int - Returns the number of documents matching the query.
+     */
     public function count(array $query = [], $limit = 0, $skip = 0)
     {
         $result = $this->db->command([
             'count' => $this->name,
-            'query' => $query, 
+            'query' => $query,
             'limit' => $limit,
             'skip' => $skip
         ]);
 
-        if(isset($result['ok'])){
+        if (isset($result['ok'])) {
             return (int) $result['n'];
         }
 
@@ -59,9 +89,41 @@ class MongoCollection
     }
 
     /**
-     * @param array $query
-     * @param array $fields
-     * @return MongoCursor
+     * Creates a database reference
+     *
+     * @param mixed $documentOrId - If an array or object is given, its
+     *   _id field will be used as the reference ID. If a MongoId or scalar
+     *   is given, it will be used as the reference ID.
+     *
+     * @return array - Returns a database reference array.   If an array
+     *   without an _id field was provided as the document_or_id parameter,
+     *   NULL will be returned.
+     */
+    public function createDBRef($documentOrId)
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Fetches the document pointed to by a database reference
+     *
+     * @param array $ref - A database reference.
+     *
+     * @return array - Returns the database document pointed to by the reference.
+     */
+    public function getDBRef(array $ref)
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Queries this collection, returning a for the result set
+     *
+     * @param array $query - The fields for which to search. MongoDB's
+     *   query language is quite extensive.
+     * @param array $fields - Fields of the results to return.
+     *
+     * @return MongoCursor - Returns a cursor for the search results.
      */
     public function find(array $query = [], array $fields = [])
     {
@@ -69,44 +131,73 @@ class MongoCollection
     }
 
     /**
-     * @param array $query
-     * @param array $fields
-     * @return array or null
+     * Queries this collection, returning a single element
+     *
+     * @param array $query - The fields for which to search. MongoDB's
+     *   query language is quite extensive.
+     * @param array $fields - Fields of the results to return.
+     *
+     * @return array - Returns record matching the search or NULL.
      */
     public function findOne(array $query = [], array $fields = [])
     {
         $cur = $this->find($query, $fields)->limit(1);
+
         return ($cur->valid()) ? $cur->current() : null;
     }
 
+    /**
+     * Update a document and return it
+     *
+     * @param array $query   -
+     * @param array $update  -
+     * @param array $fields  -
+     * @param array $options -
+     *
+     * @return array - Returns the original document, or the modified
+     *   document when new is set.
+     */
+    public function findAndModify(
+        array $query, array $update, array $fields, array $options
+    )
+    {
+        throw new Exception('Not Implemented');
+    }
 
     /**
-     * Drop the current collection
-     * @returns array
+     * Drops this collection
+     *
+     * @return array - Returns the database response.
      */
-
     public function drop()
     {
         $this->db->command(['drop' => $this->name]);
     }
 
     /**
-     * Return the collection name - NOT the fqn
-     * @return string
+     * Returns this collections name
+     *
+     * @return string - Returns the name of this collection.
      */
-
     public function getName()
     {
         return $this->name;
     }
 
     /**
-     * Insert a document
-     * @param array $a
-     * @param array $options
-     * @returns bool|array
+     * Inserts a document into the collection
+     *
+     * @param array|object $a - An array or object. If an object is used,
+     *   it may not have protected or private properties.    If the parameter
+     *   does not have an _id key or property, a new MongoId instance will be
+     *   created and assigned to it. This special behavior does not mean that
+     *   the parameter is passed by reference.
+     * @param array $options - Options for the insert.
+     *
+     * @return bool|array - Returns an array containing the status of the
+     *   insertion if the "w" option is set.
      */
-    public function insert(array &$document, array $options = [])
+    public function insert(&$document, array $options = [])
     {
         $documents = [&$document];
         $this->batchInsert($documents, $options);
@@ -117,14 +208,30 @@ class MongoCollection
     }
 
     /**
-     * Insert a set of documents
-     * @param array $a
-     * @param array $options
-     * @returns bool|array
+     * Inserts multiple documents into this collection
+     *
+     * @param array $a       - An array of arrays or objects.
+     * @param array $options - Options for the inserts.
+     *
+     * @return mixed - If the w parameter is set to acknowledge the write,
+     *   returns an associative array with the status of the inserts ("ok")
+     *   and any error that may have occurred ("err"). Otherwise, returns
+     *   TRUE if the batch insert was successfully sent, FALSE otherwise.
      */
     public function batchInsert(array &$documents, array $options = [])
     {
-        $this->createMongoIdsIfMissing($documents);
+        $count = count($documents);
+        $keys = array_keys($documents);
+        for ($i=0; $i < $count; $i++) {
+            if (is_object($documents[$keys[$i]])) {
+                $documents[$keys[$i]] = get_object_vars($documents[$keys[$i]]);
+            }
+
+            if (!isset($documents[$keys[$i]]['_id'])) {
+                $documents[$keys[$i]]['_id'] = new MongoId();
+            }
+        }
+
         $this->protocol->opInsert($this->fqn, $documents, false);
 
         // Fake response for async insert -
@@ -132,83 +239,120 @@ class MongoCollection
         return true;
     }
 
-    private function createMongoIdsIfMissing(array &$documents)
-    {
-        $count = count($documents);
-        $keys = array_keys($documents);
-        for ($i=0; $i < $count; $i++) { 
-            if (!isset($documents[$keys[$i]]['_id'])) {
-                $documents[$keys[$i]]['_id'] = new MongoId();
-            }
-        }
-    }
-    
     /**
-     * @param       array $criteria Query specifing objects to be updated
-     * @param       array $new_object document to update
-     * @param       array $options
+     * Update records based on a given criteria
      *
-     * @return bool
+     * @param array $criteria   - Description of the objects to update.
+     * @param array $new_object - The object with which to update the
+     *   matching records.
+     * @param array $options - This parameter is an associative array of
+     *   the form array("optionname" => boolean, ...)
+     *
+     * @return bool|array - Returns an array containing the status of the
+     *   update if the "w" option is set. Otherwise, returns TRUE.   Fields
+     *   in the status array are described in the documentation for
+     *   MongoCollection::insert().
      */
     public function update(array $criteria, array $newObject, array $options = [])
     {
-         $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
+        $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
+
+        //TODO: Correct return behavior
     }
 
+    /**
+     * Saves a document to this collection
+     *
+     * @param array|object $a - Array or object to save. If an object is
+     *   used, it may not have protected or private properties.
+     * @param array $options - Options for the save.
+     *
+     * @return mixed - If w was set, returns an array containing the status
+     *   of the save. Otherwise, returns a boolean representing if the array
+     *   was not empty (an empty array will not be inserted).
+     */
     public function save($document, array $options = [])
     {
-        if(!$document){
+        if (!$document) {
             return false;
         }
 
-        if(!isset($document['_id'])){
+        if (is_object($document)) {
+            $document = get_object_vars($document);
+        }
+
+        if (!isset($document['_id'])) {
             $this->update(['_id' => $document['_id']], $document, $options);
         } else {
             return $this->insert($document, $options);
         }
 
         //TODO: Handle timeout
+        //TODO: Correct return behavior
         return true;
     }
 
+    /**
+     * Remove records from this collection
+     *
+     * @param array $criteria - Description of records to remove.
+     * @param array $options  - Options for remove.    "justOne"   Remove at
+     *   most one record matching this criteria.
+     *
+     * @return bool|array - Returns an array containing the status of the
+     *   removal if the "w" option is set. Otherwise, returns TRUE.   Fields
+     *   in the status array are described in the documentation for
+     *   MongoCollection::insert().
+     */
     public function remove(array $criteria = [], array $options = [])
     {
         $this->protocol->opDelete($this->fqn, $criteria, $options);
+
+        //TODO: Correct return behavior
     }
 
     /**
-     * @param boolean $scanData Enable scan of base class
-     * @param boolean $full
+     * Validates this collection
+     *
+     * @param bool $scanData - Only validate indices, not the base collection.
+     *
+     * @return array - Returns the databases evaluation of this object.
      */
-    public function validate($full = false, $scanData = false)
+    public function validate($scanData = false)
     {
-        $result =  $this->db->command([
-            'validate' => $this->name, 
-            'full' => $full, 
-            'scandata' => $scanData
+        $result = $this->db->command([
+            'validate' => $this->name,
+            'full' => $scanData
         ]);
-        
-        if(!empty($result)){
+
+        if ($result) {
             return $result;
         }
 
         return false;
     }
 
+    /**
+     * Converts keys specifying an index to its identifying string
+     *
+     * @param mixed $keys - Field or fields to convert to the identifying string
+     *
+     * @return string - Returns a string that describes the index.
+     */
     protected static function toIndexString($keys)
     {
         if (is_string($keys)) {
             return self::toIndexStringFromString($keys);
-        } else if (is_object($keys)) {
+        } elseif (is_object($keys)) {
             $keys = get_object_vars($keys);
         }
 
         if (is_array($keys)) {
             return self::toIndexStringFromArray($keys);
         }
-            
+
         trigger_error('MongoCollection::toIndexString(): The key needs to be either a string or an array', E_USER_WARNING);
-        
+
         return null;
     }
 
@@ -234,24 +378,51 @@ class MongoCollection
             $keys[$key] = str_replace('.', '_', $key . '_' . $value);
         }
 
-        return implode('_', $keys);  
+        return implode('_', $keys);
     }
 
+    /**
+     * Deletes an index from this collection
+     *
+     * @param string|array $keys - Field or fields from which to delete the
+     *   index.
+     *
+     * @return array - Returns the database response.
+     */
     public function deleteIndex($keys)
     {
         $cmd = [
-            'deleteIndexes' => $this->name, 
+            'deleteIndexes' => $this->name,
             'index' => self::toIndexString($keys)
         ];
 
-        return $this->db->command($cmd);  
+        return $this->db->command($cmd);
     }
 
+    /**
+     * Delete all indices for this collection
+     *
+     * @return array - Returns the database response.
+     */
     public function deleteIndexes()
     {
         return (bool) $this->db->getIndexesCollection()->drop();
     }
 
+    /**
+     * Creates an index on the given field(s), or does nothing if the index
+     *    already exists
+     *
+     *
+     * @param string|array $key|keys -
+     * @param array        $options  - This parameter is an associative array of
+     *   the form array("optionname" => boolean, ...).
+     *
+     * @return bool - Returns an array containing the status of the index
+     *   creation if the "w" option is set. Otherwise, returns TRUE.   Fields
+     *   in the status array are described in the documentation for
+     *   MongoCollection::insert().
+     */
     public function ensureIndex($keys, array $options = [])
     {
         if (!is_array($keys)) {
@@ -284,9 +455,9 @@ class MongoCollection
         $index = array_merge($index, $options);
 
         return (bool) $this->db->getIndexesCollection()->insert(
-            $index, 
+            $index,
             $insertOptions
-        );        
+        );
     }
 
     private function fixNumberLongIndexes(array $keys)
@@ -299,6 +470,16 @@ class MongoCollection
         return $fixedKeys;
     }
 
+    /**
+     * Returns information about indexes on this collection
+     *
+     * @return array - This function returns an array in which each element
+     *   describes an index. Elements will contain the values name for the
+     *   name of the index, ns for the namespace (a combination of the
+     *   database and collection name), and key for a list of all fields in
+     *   the index and their ordering. Additional values may be present for
+     *   special indexes, such as unique or sparse.
+     */
     public function getIndexInfo()
     {
         $indexes = $this->db->getIndexesCollection()->find([
@@ -309,8 +490,109 @@ class MongoCollection
     }
 
     /**
-     * __toString return full name of collections.
-     * @return string
+     * Set the read preference for this collection
+     *
+     * @param string $read_preference -
+     * @param array  $tags            -
+     *
+     * @return bool -
+     */
+    public function setReadPreference(string $read_preference, array $tags)
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Get the read preference for this collection
+     *
+     * @return array -
+     */
+    public function getReadPreference()
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Change slaveOkay setting for this collection
+     *
+     * @param bool $ok - If reads should be sent to secondary members of a
+     *   replica set for all possible queries using this MongoCollection
+     *   instance.
+     *
+     * @return bool - Returns the former value of slaveOkay for this
+     *   instance.
+     */
+    public function setSlaveOkay($ok = true)
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Get slaveOkay setting for this collection
+     *
+     * @return bool - Returns the value of slaveOkay for this instance.
+     */
+    public function getSlaveOkay()
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Perform an aggregation using the aggregation framework
+     *
+     * @param array $pipeline -
+     * @param array $op       -
+     * @param array $...      -
+     *
+     * @return array - The result of the aggregation as an array. The ok
+     *   will be set to 1 on success, 0 on failure.
+     */
+    public function aggregate(array $pipeline, array $op)
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Retrieve a list of distinct values for the given key across a collection.
+     *
+     * @param string $key   -
+     * @param array  $query -
+     *
+     * @return array - Returns an array of distinct values,
+     */
+    public function distinct(string $key, array $query)
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * Performs an operation similar to SQL's GROUP BY command
+     *
+     * @param mixed $keys - Fields to group by. If an array or non-code
+     *   object is passed, it will be the key used to group results.
+     * @param array $initial - Initial value of the aggregation counter
+     *   object.
+     * @param mongocode $reduce - A function that takes two arguments (the
+     *   current document and the aggregation to this point) and does the
+     *   aggregation.
+     * @param array $options - Optional parameters to the group command
+     *
+     * @return array - Returns an array containing the result.
+     */
+    public function group(
+        $keys,
+        array $initial,
+        MongoCode $reduce,
+        array $options = array()
+    )
+    {
+        throw new Exception('Not Implemented');
+    }
+
+    /**
+     * String representation of this collection
+     *
+     * @return string - Returns the full name of this collection.
      */
     public function __toString()
     {
