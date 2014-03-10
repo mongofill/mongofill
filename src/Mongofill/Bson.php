@@ -32,7 +32,9 @@ class Bson
     static public function decode($data)
     {
         $offset = 0;
-        return self::decDocument($data, $offset);
+        $doc = self::decDocument($data, $offset);
+
+        return $doc;
     }
 
     static private function encElement($name, $value)
@@ -102,13 +104,15 @@ class Bson
                 }
                 break;
             case $value instanceof \MongoBinData:
+                $length = strlen($value->bin);
                 if ($value->type != 2) {
-                    $bin = pack('C', $value->type).$value->bin;
+                    $bin = pack('C', $value->type) . $value->bin;
                 } else {
-                    $bin = pack('CV', $value->type, strlen($value->bin)).$value->bin;
+                    $bin = pack('CV', $value->type, $length) . $value->bin;
+                    $length += 4;
                 }
-                $bin = pack("V", strlen($value->bin) + (($value->type == 2) ? 4 : 0)).$bin;
 
+                $bin = pack('V', $length) . $bin;
                 $sig  = self::ETYPE_BINARY;
                 break;
             default:
@@ -130,9 +134,10 @@ class Bson
 
     static private function decElement($data, &$offset)
     {
-        $sig    = ord($data{$offset});
+        $sig = ord($data{$offset});
         $offset++;
-        $name   = Util::parseCString($data, $offset);
+        $name = Util::parseCString($data, $offset);
+
         switch($sig) {
             case self::ETYPE_ID:
                 $binId = Util::unpack('a12id', $data, $offset, 12)['id'];
@@ -195,6 +200,7 @@ class Bson
                 break;
             case self::ETYPE_BINARY:
                 $vars = Util::unpack('Vlen/Csubtype', $data, $offset, 5);
+
                 $len = $vars['len'];
                 $subtype = $vars['subtype'];
                 if ($subtype == 2) {
@@ -207,15 +213,23 @@ class Bson
                         $offset -= 4;
                     }
                 }
+
                 if ($len < 0) {
-                    throw new \RuntimeException(sprintf("invalid binary length for key \"%s\": %d", $name, $len), 22);
+                    throw new \RuntimeException(sprintf(
+                        'invalid binary length for key "%s": %d', 
+                        $name, 
+                        $len
+                    ), 22);
                 }
-                $value = new \MongoBinData(substr($data, $offset, $len), $subtype);
-                $offset += $len;
+
+                $bin = substr($data, $offset, $len);
+                $value = new \MongoBinData($bin, $subtype);
+                $offset += strlen($bin);
                 break;
             default:
                 throw new \RuntimeException('Invalid signature: 0x' . dechex($sig));
         }
+
         return [$name, $value];
     }
 
@@ -224,16 +238,22 @@ class Bson
         $docLen = Util::unpack('Vlen', $data, $offset, 4)['len'] - 5; // subtract len. and null-terminator
         $document = [];
         $parsedLen = 0;
+       
         while(0 !== ord($data{$offset})) {
             $elmLen = $offset;
             $elm = self::decElement($data, $offset);
             $parsedLen += ($offset - $elmLen);
             $document[$elm[0]] = $elm[1];
         }
+
         if ($docLen !== $parsedLen) {
-            throw new \RuntimeException(
-                "Document length doesn't match total size of parsed elements ($docLen:$parsedLen)");
+            throw new \RuntimeException(sprintf(
+                'Document length doesn\'t match total size of parsed elements (%d:%d)',
+                $docLen, 
+                $parsedLen
+            ));
         }
+
         $offset++; // add one byte for document nul-terminator
         return $document;
     }

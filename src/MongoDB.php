@@ -145,4 +145,9 @@ class MongoDB
     {
         return $this->name;
     }
+
+    public function getGridFS($prefix = 'fs')
+    {
+        return new MongoGridFS($this, $prefix);
+    }
 }

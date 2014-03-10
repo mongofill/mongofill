@@ -30,7 +30,11 @@
             { "MongoCode": "src/MongoCode.php" },
             { "MongoException": "src/MongoException.php" },
             { "MongoLog": "src/MongoLog.php" },
-            { "MongoTimestamp": "src/MongoTimestamp.php" }
+            { "MongoTimestamp": "src/MongoTimestamp.php" },
+            { "MongoGridFS": "src/MongoGridFS.php" },
+            { "MongoGridFSFile": "src/MongoGridFSFile.php" },
+            { "MongoGridFSException": "src/MongoGridFSException.php" },
+            { "MongoGridFSCursor": "src/MongoGridFSCursor.php" }
         ],
         "files": [
             "src/functions.php"

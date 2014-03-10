@@ -87,30 +87,26 @@ class Protocol
 
     private function opReply($requestId)
     {
-        // read response
-        $bytesReceived = 0;
-        $bytesToRead = self::MSG_HEADER_SIZE;
-        $data = '';
-        $header = null;
-        do {
-            $data .= fread($this->socket, $bytesToRead);
-            if (false === $data) {
-                // TODO handle read errors
-                throw new \RuntimeException('unhandled socket read error');
-            }
-            $bytesReceived += strlen($data);
+        $header = $this->readHeaderFromSocket();
+        if ($requestId != $header['responseTo']) {
+            throw new \RuntimeException(sprintf(
+                'request/cursor mismatch: %d vs %d',
+                $requestId,
+                $header['responseTo']
+            ));
+        }
 
-            // load header first
-            if (!$header && $bytesReceived >= $bytesToRead) {
-                $header = $this->decodeHeader($data);
-                $bytesToRead = $header['messageLength'] - self::MSG_HEADER_SIZE;
-            }
-        } while ($bytesReceived < $bytesToRead);
+        $data = $this->readFromSocket($header['messageLength'] - self::MSG_HEADER_SIZE);
 
         // process response
-        $offset = self::MSG_HEADER_SIZE;
-        $vars = unpack('Vflags/V2cursorId/VstartingFrom/VnumberReturned', substr($data, $offset, 20));
-        $offset += 20;
+        $offset = 0;
+        $vars = Util::unpack(
+            'Vflags/V2cursorId/VstartingFrom/VnumberReturned', 
+            $data, 
+            $offset, 
+            20
+        );
+
         $documents = [];
         for($i = 0; $i < $vars['numberReturned']; $i++) {
             $documents[] = Bson::decDocument($data, $offset);
@@ -122,6 +118,25 @@ class Protocol
             'start'    => $vars['startingFrom'],
             'count'    => $vars['numberReturned'],
         ];
+    }
+
+    private function readFromSocket($length)
+    {
+        $data = stream_get_contents($this->socket, $length);
+        if (false === $data) {
+            // TODO handle read errors
+            throw new \RuntimeException('unhandled socket read error');
+        }
+
+        return $data;
+    }
+
+    private function readHeaderFromSocket()
+    {
+        $data = $this->readFromSocket(self::MSG_HEADER_SIZE);
+        $header = unpack('VmessageLength/VrequestId/VresponseTo/Vopcode', $data);
+
+        return $header;
     }
 
     public function opGetMore($fullCollectionName, $limit, $cursorId)
@@ -142,11 +157,6 @@ class Protocol
         $data = pack('Va*Va*', 0, "$fullCollectionName\0", $flags,  Bson::encode($query));
 
         $requestId = $this->sendMessage(self::OP_DELETE, $data);
-    }
-
-    private function decodeHeader($data)
-    {
-        return unpack('VmessageLength/VrequestId/VresponseTo/Vopcode', $data);
     }
 }
 

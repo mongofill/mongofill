@@ -26,7 +26,7 @@ class MongoBinData
      * @param string $data
      * @param int $type
      */
-    public function __construct($data, $type = 2)
+    public function __construct($data, $type = self::BYTE_ARRAY)
     {
         $this->bin = $data;
         $this->type = $type;
