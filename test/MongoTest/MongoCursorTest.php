@@ -32,6 +32,51 @@ class MongoCursorTest extends BaseTest
         $this->assertCount(5, $this->coll->find());
     }
 
+    public function testFindFewDocumentsWithLimit()
+    {
+        $this->createNDocuments(200);
+        $this->assertCount(120, $this->coll->find()->limit(120));
+    }
+
+    public function testFindFewDocumentsWithSkip()
+    {
+        $this->createNDocuments(150);
+
+        $result = iterator_to_array($this->coll->find()->skip(110));
+        $this->assertCount(40, $result);
+        $this->assertSame(111, reset($result)['foo']);
+    }
+
+    public function testFindFewDocumentsWithSkipAndLimit()
+    {
+        $this->createNDocuments(230);
+
+        $result = iterator_to_array($this->coll->find()->skip(110)->limit(110));
+        $this->assertCount(110, $result);
+        $this->assertSame(111, reset($result)['foo']);
+    }
+
+    public function testFindFewDocumentsWithSkipAndLimitAndBatchSize()
+    {
+        $this->createNDocuments(230);
+
+        $result = iterator_to_array($this->coll->find()->skip(110)->limit(110)->batchSize(10));
+        $this->assertCount(110, $result);
+        $this->assertSame(111, reset($result)['foo']);
+    }
+
+    public function testFindFewDocumentsWithBatchSizeNegative()
+    {
+        $this->createNDocuments(230);
+        $this->assertCount(10, $this->coll->find()->batchSize(-10));
+    }
+
+    public function testFindFewDocumentsWithLimitNegative()
+    {
+        $this->createNDocuments(230);
+        $this->assertCount(10, $this->coll->find()->limit(-10));
+    }
+
     public function testFindManyDocuments()
     {
         $this->createNDocuments(500);
@@ -48,6 +93,12 @@ class MongoCursorTest extends BaseTest
     {
         $this->createNDocuments(500);
         $this->assertSame(500, $this->coll->find()->limit(10)->count());
+    }
+
+   public function testCountWithSkip()
+    {
+        $this->createNDocuments(500);
+        $this->assertSame(500, $this->coll->find()->limit(10)->skip(10)->count());
     }
 
     public function testCountFoundOnlyUnderGetMore()

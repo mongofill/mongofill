@@ -72,10 +72,10 @@ class Protocol
     }
 
     public function opQuery(
-        $fullCollectionName, array $query, $skip, $limit, $flags, array $returnFieldsSelector = null)
+        $fullCollectionName, array $query, $numberToSkip, $numberToReturn, $flags, array $returnFieldsSelector = null)
     {
         // do request
-        $data = pack('Va*VVa*', $flags, "$fullCollectionName\0", $skip, $limit, Bson::encode($query));
+        $data = pack('Va*VVa*', $flags, "$fullCollectionName\0", $numberToSkip, $numberToReturn, Bson::encode($query));
         if ($returnFieldsSelector) {
             $data .= Bson::encode($returnFieldsSelector);
         }

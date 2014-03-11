@@ -171,7 +171,9 @@ class MongoCursor implements Iterator
      */
     public function batchSize($batchSize)
     {
-        throw new Exception('Not Implemented');
+        $this->batchSize = $batchSize;
+
+        return $this;
     }
 
     /**
@@ -204,81 +206,6 @@ class MongoCursor implements Iterator
         return $this->countQuerying();
     }
 
-    /**
-     * Execute the query.
-     *
-     * @return void - NULL.
-     */
-    protected function doQuery()
-    {
-        if (!$this->fetching) {
-            $this->fetchDocuments();
-        }
-    }
-
-    private function fetchDocuments()
-    {
-        $this->fetching = true;
-
-        $response = $this->protocol->opQuery(
-            $this->fcn,
-            $this->getQuery(),
-            $this->querySkip,
-            $this->queryLimit,
-            0, //no flags
-            $this->fields
-        );
-
-        $this->cursorId = $response['cursorId'];
-        $this->setDocuments($response);
-    }
-
-    private function fetchMoreDocuments()
-    {
-        if (!$this->hasMore) {
-            $this->end = true;
-
-            return;
-        }
-
-        $limit = $this->batchSize;
-        $limited = true;
-        if ($this->queryLimit && $this->queryLimit < $this->batchSize) {
-            $limit = $this->queryLimit - count($this->documents);
-            $limited = false;
-        }
-
-        $response = $this->protocol->opGetMore($this->fcn, $limit+1, $this->cursorId);
-
-        $this->setDocuments($response);
-    }
-
-    private function getQuery()
-    {
-        $query = $this->query;
-        if ($this->querySort !== null) {
-            $query = [
-                '$query' => $query,
-                '$orderby' => $this->querySort
-            ];
-        }
-
-        return $query;
-    }
-
-    private function setDocuments(array $response)
-    {
-        if (0 === $response['count']) {
-            $this->end = true;
-        }
-
-        if ($response['count'] > $this->batchSize) {
-            $this->hasMore = true;
-        }
-
-        $this->documents = array_merge($this->documents, $response['result']);
-    }
-
     private function countQuerying()
     {
         $ns = explode('.', $this->fcn, 2);
@@ -295,11 +222,121 @@ class MongoCursor implements Iterator
 
     private function countLocalData()
     {
-        while ($this->hasMore && !$this->end) {
+        while (!$this->end) {
             $this->fetchMoreDocuments();
         }
 
         return count($this->documents);
+    }
+
+    /**
+     * Execute the query.
+     *
+     * @return void - NULL.
+     */
+    protected function doQuery()
+    {
+        if (!$this->fetching) {
+            $this->fetchDocuments();
+        }
+    }
+
+    private function fetchDocuments()
+    {
+        $this->fetching = true;
+        $response = $this->protocol->opQuery(
+            $this->fcn,
+            $this->getQuery(),
+            $this->querySkip,
+            $this->calculateRequestLimit(),
+            0, //no flags
+            $this->fields
+        );
+
+        $this->cursorId = $response['cursorId'];
+        $this->setDocuments($response);
+    }
+
+    private function calculateRequestLimit()
+    {
+        if ($this->queryLimit < 0) {
+            return $this->queryLimit;
+        } else if ($this->batchSize < 0) {
+            return $this->batchSize;
+        }
+
+        if ($this->queryLimit > $this->batchSize) {
+            return $this->batchSize;
+        } else {
+            return $this->queryLimit;
+        }
+
+        if ($this->batchSize && (!$limitAt || $this->batchSize <= $limitAt)) {
+            return $this->batchSize;
+        } else if ($limitAt && (!$limitAt || $this->batchSize > $limitAt)) {
+            return $limitAt;
+        }
+
+        return 0;
+    }
+
+    private function fetchMoreDocuments()
+    {
+        $limit = $this->calculateNextRequestLimit();    
+        if ($this->end) {
+            return;
+        }
+
+        $response = $this->protocol->opGetMore(
+            $this->fcn, 
+            $limit, 
+            $this->cursorId
+        );
+
+        $this->setDocuments($response);
+    }
+
+    private function calculateNextRequestLimit()
+    {
+        $current = count($this->documents);
+        if ($this->queryLimit && $current >= $this->queryLimit) {
+            $this->end = true;
+            return 0;
+        }
+
+        if ($this->queryLimit >= $current) {
+            $remaining = $this->queryLimit - $current;
+        } else {
+            $remaining = $this->queryLimit;
+        }
+
+        if ($remaining > $this->batchSize) {
+            return $this->batchSize;
+        }
+
+        return $remaining;
+    }
+
+    private function setDocuments(array $response)
+    {
+        if (0 === $response['count']) {
+            $this->end = true;
+        }
+
+        $this->documents = array_merge($this->documents, $response['result']);
+    }
+
+    private function getQuery()
+    {
+        $query = $this->query;
+        if ($this->querySort !== null) {
+            $query = [
+                '$query' => $query,
+                '$orderby' => $this->querySort
+            ];
+        }
+
+        return $query;
     }
 
     /**
