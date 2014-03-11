@@ -142,6 +142,13 @@ class BsonTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expect,  Bson::encode($input));
     } 
 
+    public function testEncodeDecodeObject()
+    {
+        $input = [(object) ['foo' => 1, 'bar' => 2]];
+        $expect = "'\000\000\000\0030\000\037\000\000\000\022foo\000\001\000\000\000\000\000\000\000\022bar\000\002\000\000\000\000\000\000\000\000\000";
+        $this->assertEquals($expect,  Bson::encode($input));
+    } 
+
     public function testIsDocument()
     {
         $this->assertFalse(Bson::isDocument(['foo']));

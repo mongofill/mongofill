@@ -96,13 +96,6 @@ class Bson
                 $bin = pack('V2', $value->inc, $value->sec);
                 $sig = self::ETYPE_TIMESTAMP;
                 break;
-            case is_array($value):
-                $bin = self::encDocument($value);
-                $sig = self::ETYPE_ARRAY;
-                if (self::isDocument($value)) {
-                    $sig = self::ETYPE_DOCUMENT;
-                }
-                break;
             case $value instanceof \MongoBinData:
                 $length = strlen($value->bin);
                 if ($value->type != 2) {
@@ -114,6 +107,15 @@ class Bson
 
                 $bin = pack('V', $length) . $bin;
                 $sig  = self::ETYPE_BINARY;
+                break;
+            case is_object($value):
+                $value = get_object_vars($value);
+            case is_array($value):
+                $bin = self::encDocument($value);
+                $sig = self::ETYPE_ARRAY;
+                if (self::isDocument($value)) {
+                    $sig = self::ETYPE_DOCUMENT;
+                }
                 break;
             default:
                 throw new \RuntimeException('Unsupported value type: ' . gettype($value));

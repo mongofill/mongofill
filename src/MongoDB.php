@@ -237,7 +237,7 @@ class MongoDB
      *   without an _id field was provided as the document_or_id parameter,
      *   NULL will be returned.
      */
-    public function createDBRef(string $collection, $documentOrId)
+    public function createDBRef($collection, $documentOrId)
     {
         throw new Exception('Not Implemented');
     }
@@ -385,7 +385,7 @@ class MongoDB
      *
      * @return int - Returns the previous profiling level.
      */
-    public function setProfilingLevel(int $level)
+    public function setProfilingLevel($level)
     {
         throw new Exception('Not Implemented');
     }

@@ -208,7 +208,7 @@ class MongoClient
      *
      * @return array - Returns the database response.
      */
-    public function dropDB(mixed $db)
+    public function dropDB($db)
     {
         throw new Exception('Not Implemented');
     }

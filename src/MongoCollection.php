@@ -281,7 +281,7 @@ class MongoCollection
             $document = get_object_vars($document);
         }
 
-        if (!isset($document['_id'])) {
+        if (isset($document['_id'])) {
             $this->update(['_id' => $document['_id']], $document, $options);
         } else {
             return $this->insert($document, $options);
@@ -432,7 +432,7 @@ class MongoCollection
         $index = [
             'ns' => $this->fqn,
             'name' => self::toIndexString($keys, $options),
-            'key' => $this->fixNumberLongIndexes($keys)
+            'key' => $keys
         ];
 
         $insertOptions = [];
@@ -454,20 +454,12 @@ class MongoCollection
 
         $index = array_merge($index, $options);
 
-        return (bool) $this->db->getIndexesCollection()->insert(
+        $return = (bool) $this->db->getIndexesCollection()->insert(
             $index,
             $insertOptions
         );
-    }
 
-    private function fixNumberLongIndexes(array $keys)
-    {
-        $fixedKeys = [];
-        foreach ($keys as $key => $value) {
-            $fixedKeys[$key] = (float) $value;
-        }
-
-        return $fixedKeys;
+        return $return;
     }
 
     /**
@@ -497,7 +489,7 @@ class MongoCollection
      *
      * @return bool -
      */
-    public function setReadPreference(string $read_preference, array $tags)
+    public function setReadPreference($readPreference, array $tags)
     {
         throw new Exception('Not Implemented');
     }
@@ -560,7 +552,7 @@ class MongoCollection
      *
      * @return array - Returns an array of distinct values,
      */
-    public function distinct(string $key, array $query)
+    public function distinct($key, array $query)
     {
         throw new Exception('Not Implemented');
     }
@@ -582,7 +574,7 @@ class MongoCollection
     public function group(
         $keys,
         array $initial,
-        MongoCode $reduce,
+        $reduce,
         array $options = array()
     )
     {

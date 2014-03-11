@@ -73,7 +73,7 @@ class MongoId
         $this->pid = getmypid();
 
         if ($this->pid > 32768) {
-            $this->pid = $this->pid - 65536;
+            $this->pid = 65536 - $this->pid;
         }
 
         return $this->assembleId();

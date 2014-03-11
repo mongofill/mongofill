@@ -7,7 +7,7 @@ use Mongofill\Protocol;
  */
 class MongoCursor implements Iterator
 {
-    const INTERNAL_QUERY_LIMIT = 100;
+    const DEFAULT_BATCH_SIZE = 100;
 
     /**
      * @var MongoClient
@@ -79,6 +79,11 @@ class MongoCursor implements Iterator
      * @var array|null
      */
     private $querySort = null;
+
+    /**
+     * @var int
+     */
+    private $batchSize = self::DEFAULT_BATCH_SIZE;
 
     /**
      * Create a new cursor
@@ -236,9 +241,9 @@ class MongoCursor implements Iterator
             return;
         }
 
-        $limit = self::INTERNAL_QUERY_LIMIT;
+        $limit = $this->batchSize;
         $limited = true;
-        if ($this->queryLimit && $this->queryLimit < self::INTERNAL_QUERY_LIMIT) {
+        if ($this->queryLimit && $this->queryLimit < $this->batchSize) {
             $limit = $this->queryLimit - count($this->documents);
             $limited = false;
         }
@@ -267,7 +272,7 @@ class MongoCursor implements Iterator
             $this->end = true;
         }
 
-        if ($response['count'] > self::INTERNAL_QUERY_LIMIT) {
+        if ($response['count'] > $this->batchSize) {
             $this->hasMore = true;
         }
 
