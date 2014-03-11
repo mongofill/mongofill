@@ -74,15 +74,10 @@ class Bson
                 $sig  = self::ETYPE_STRING;
                 break;
             case $value instanceof \MongoCode:
-                $scope = $value->getScope();
-                $bin = pack('Va*', strlen($value)+1, "$value\0");
-                if ($scope) {
-                    $bin .= self::encDocument($scope);
-                    $bin = pack('Va*', strlen($bin)+1, $bin);
-                    $sig = self::ETYPE_CODE_W_S;
-                } else {
-                    $sig = self::ETYPE_CODE;
-                }
+                $scope = self::encDocument($value->getScope());
+                $code = pack('Va*', strlen($value)+1, "$value\0");
+                $bin = pack('V', strlen($code) + strlen($scope) + 4).$code.$scope;
+                $sig = self::ETYPE_CODE_W_S;
                 break;
             case $value instanceof \MongoRegex:
                 $bin = $value->regex."\0".$value->flags."\0";
