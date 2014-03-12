@@ -26,6 +26,62 @@ class MongoCursorTest extends BaseTest
         $this->coll->batchInsert($documents);
     }
 
+    public function testFind()
+    {
+        $this->createNDocuments(5);
+
+        $result = iterator_to_array($this->coll->find(['foo' => 2]));
+        $this->assertCount(1, $result);
+        $this->assertSame(2, end($result)['foo']);
+    }
+    
+    public function testFindWithExplain()
+    {
+        $this->createNDocuments(5);
+        $cursor = $this->coll->find(['foo' => 2]);
+
+        $explain = $cursor->explain();
+        $this->assertArrayHasKey('server', $explain);
+    }
+
+    public function testFindWithFields()
+    {
+        $this->createNDocuments(5);
+
+        $result = iterator_to_array(
+            $this->coll->find(['foo' => 2])->fields(['_id' => 1])
+        );
+
+        $first = end($result);
+        $this->assertCount(1, $result);
+        $this->assertFalse(isset($first['foo']));
+    }
+
+    public function testFindWithHintString()
+    {
+        $this->createNDocuments(5);
+        $this->coll->ensureIndex(['foo' => 1]);
+
+        $result = iterator_to_array(
+            $this->coll->find(['foo' => 2])->hint('foo_1')
+        );
+
+        $this->assertCount(1, $result);
+        $this->assertSame(2, end($result)['foo']);
+    }
+
+    public function testFindWithHintArray()
+    {
+        $this->createNDocuments(5);
+        $this->coll->ensureIndex(['foo' => 1]);
+
+        $result = iterator_to_array(
+            $this->coll->find(['foo' => 2])->hint(['foo' => 1])
+        );
+
+        $this->assertCount(1, $result);
+        $this->assertSame(2, end($result)['foo']);
+    }
     public function testFindFewDocuments()
     {
         $this->createNDocuments(5);

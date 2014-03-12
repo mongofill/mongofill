@@ -356,6 +356,11 @@ class MongoCollection
         return null;
     }
 
+    public static function _toIndexString($keys)
+    {
+        return self::toIndexString($keys);
+    }
+
     private static function toIndexStringFromString($keys)
     {
         return str_replace('.', '_', $keys . '_1');

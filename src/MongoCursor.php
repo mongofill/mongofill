@@ -58,12 +58,7 @@ class MongoCursor implements Iterator
     /**
      * @var array
      */
-    private $query = [ ];
-
-    /**
-     * @var array
-     */
-    private $fields = [ ];
+    private $query = [];
 
     /**
      * @var int
@@ -97,11 +92,75 @@ class MongoCursor implements Iterator
      */
     public function __construct(MongoClient $connection, $ns, array $query = [], array $fields = [])
     {
-        $this->client   = $connection;
+        $this->client = $connection;
         $this->protocol = $connection->_getProtocol();
-        $this->fcn      = $ns;
-        $this->query    = $query;
-        $this->fields   = $fields;
+        $this->fcn = $ns;
+        $this->fields = $fields;
+        $this->query['$query'] = $query;
+
+    }
+
+    /**
+     * Gives the database a hint about the query
+     *
+     * @param mixed $index - Index to use for the query. If a string is
+     *   passed, it should correspond to an index name. If an array or object
+     *   is passed, it should correspond to the specification used to create
+     *   the index (i.e. the first argument to
+     *   MongoCollection::ensureIndex()).
+     *
+     * @return MongoCursor - Returns this cursor.
+     */
+    public function hint($index)
+    {
+        if (is_object($index)) {
+            $index = get_object_vars($index);
+        }
+
+        if (is_array($index)) {
+            $index = MongoCollection::_toIndexString($index);
+        }
+
+        $this->query['$hint'] = $index;
+
+        return $this;
+    }
+
+    /**
+     * Use snapshot mode for the query
+     *
+     * @return MongoCursor - Returns this cursor.
+     */
+    public function snapshot()
+    {
+        $this->query['$snapshot'] = true;
+
+        return $this;
+    }
+
+    /**
+     * Return an explanation of the query, often useful for optimization and
+     * debugging
+     *
+     * @return array - Returns an explanation of the query.
+     */
+    public function explain()
+    {
+        $query = [
+            '$query' => $this->getQuery(),
+            '$explain' => true
+        ];
+
+        $response = $this->protocol->opQuery(
+            $this->fcn,
+            $query,
+            $this->querySkip,
+            $this->calculateRequestLimit(),
+            0, //no flags
+            $this->fields
+        );
+
+        return $response['result'][0];
     }
 
     /**
@@ -113,7 +172,9 @@ class MongoCursor implements Iterator
      */
     public function fields(array $fields)
     {
-        throw new Exception('Not Implemented');
+        $this->fields = $fields;
+
+        return $this;
     }
 
     /**
@@ -257,6 +318,15 @@ class MongoCursor implements Iterator
         $this->setDocuments($response);
     }
 
+    private function getQuery()
+    {
+        if (isset($this->query['$query']) && count($this->query) == 1) {
+            return $this->query['$query'];
+        }
+
+        return $this->query;
+    }
+
     private function calculateRequestLimit()
     {
         if ($this->queryLimit < 0) {
@@ -326,30 +396,6 @@ class MongoCursor implements Iterator
         $this->documents = array_merge($this->documents, $response['result']);
     }
 
-    private function getQuery()
-    {
-        $query = $this->query;
-        if ($this->querySort !== null) {
-            $query = [
-                '$query' => $query,
-                '$orderby' => $this->querySort
-            ];
-        }
-
-        return $query;
-    }
-
-    /**
-     * Return an explanation of the query, often useful for optimization and
-     * debugging
-     *
-     * @return array - Returns an explanation of the query.
-     */
-    public function explain()
-    {
-        throw new Exception('Not Implemented');
-    }
-
     /**
      * Adds a top-level key/value pair to a query
      *
@@ -416,22 +462,6 @@ class MongoCursor implements Iterator
      * @return bool - Returns if there is another element.
      */
     public function hasNext()
-    {
-        throw new Exception('Not Implemented');
-    }
-
-    /**
-     * Gives the database a hint about the query
-     *
-     * @param mixed $index - Index to use for the query. If a string is
-     *   passed, it should correspond to an index name. If an array or object
-     *   is passed, it should correspond to the specification used to create
-     *   the index (i.e. the first argument to
-     *   MongoCollection::ensureIndex()).
-     *
-     * @return MongoCursor - Returns this cursor.
-     */
-    public function hint($index)
     {
         throw new Exception('Not Implemented');
     }
@@ -513,15 +543,6 @@ class MongoCursor implements Iterator
         throw new Exception('Not Implemented');
     }
 
-    /**
-     * Use snapshot mode for the query
-     *
-     * @return MongoCursor - Returns this cursor.
-     */
-    public function snapshot()
-    {
-        throw new Exception('Not Implemented');
-    }
 
     /**
      * Sets whether this cursor will be left open after fetching the last
