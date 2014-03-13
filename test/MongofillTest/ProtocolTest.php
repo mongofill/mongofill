@@ -6,7 +6,11 @@ class ProtocolTest extends PHPUnit_Framework_TestCase
 {
     private function getProtocol()
     {
-        $proto = new Protocol(fsockopen('localhost', 27017));
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        socket_connect($socket, 'localhost', 27017);
+
+        $proto = new Protocol($socket);
+        
         return $proto;
     }
 

@@ -22,12 +22,6 @@ class MongoGridFSFileTest extends BaseTest
 
     public function testGetBytes()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete(
-              'Bugfix required: fatal error "Out of bounds"'
-            );        
-        }
-
         $filename = __DIR__ . MongoGridFSTest::EXAMPLE_BIN_FILE;
         $this->grid->storeFile($filename);
 
@@ -37,12 +31,6 @@ class MongoGridFSFileTest extends BaseTest
 
     public function testWrite()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestIncomplete(
-              'Bugfix required: fatal error "Out of bounds"'
-            );        
-        }
-        
         $output = '/tmp/' . rand();
 
         $filename = __DIR__ . MongoGridFSTest::EXAMPLE_BIN_FILE;

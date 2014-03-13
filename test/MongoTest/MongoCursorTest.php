@@ -41,7 +41,7 @@ class MongoCursorTest extends BaseTest
         $cursor = $this->coll->find(['foo' => 2]);
 
         $explain = $cursor->explain();
-        $this->assertArrayHasKey('server', $explain);
+        $this->assertArrayHasKey('n', $explain);
     }
 
     public function testFindWithFields()

@@ -49,12 +49,12 @@ class MongoClient
     /**
      * @var string
      */
-    private $host   = self::DEFAULT_HOST;
+    private $host = self::DEFAULT_HOST;
 
     /**
      * @var int
      */
-    private $port   = self::DEFAULT_PORT;
+    private $port = self::DEFAULT_PORT;
 
     /**
      * @var Protocol
@@ -125,17 +125,45 @@ class MongoClient
      */
     public function connect()
     {
-        if (!$this->socket) {
-            $socket = fsockopen($this->host, $this->port);
-            if (false === $socket) {
-                return false;
-            }
-
-            $this->socket = $socket;
-            $this->protocol = new Protocol($socket);
+        if ($this->socket) {
+            return true;
         }
 
+        $this->createSocket();
+        $this->connectSocket();
+
+        $this->protocol = new Protocol($this->socket);
+
         return true;
+    }
+
+    private function createSocket()
+    {
+        if (!$this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) {
+            throw new MongoConnectionException(sprintf(
+                'error creating socket: %s',
+                socket_strerror(socket_last_error())
+            ));
+        } 
+    }
+
+    private function connectSocket()
+    {
+        $ip = gethostbyname($this->host);
+        if ($ip == $this->host) {
+            throw new MongoConnectionException(sprintf(
+                'couldn\'t get host info for %s',
+                $this->host
+            ));
+        } 
+
+        $connected = socket_connect($this->socket, $ip, $this->port);
+        if (false === $connected) {
+            throw new MongoConnectionException(sprintf(
+                'unable to connect %s',
+                socket_strerror(socket_last_error())
+            ));
+        } 
     }
 
     /**

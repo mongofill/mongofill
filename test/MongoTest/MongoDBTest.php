@@ -27,11 +27,17 @@ class MongoDBTest extends BaseTest
         $coll->insert($data);
 
         $collections = $db->listCollections(true);
+        foreach ($collections as $collection) {
+            $names[] = $collection->getName();
+        }
+         
+        sort($names);       
+
         $this->assertCount(2, $collections);
         $this->assertInstanceOf('MongoCollection', $collections[0]);
         $this->assertInstanceOf('MongoCollection', $collections[1]);
-        $this->assertSame('system.indexes', $collections[0]->getName());
-        $this->assertSame('testDB', $collections[1]->getName());
+        $this->assertSame('system.indexes', $names[0]);
+        $this->assertSame('testDB', $names[1]);
     }
 
     public function testCommand()

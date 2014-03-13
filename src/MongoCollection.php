@@ -74,12 +74,20 @@ class MongoCollection
      */
     public function count(array $query = [], $limit = 0, $skip = 0)
     {
-        $result = $this->db->command([
+        $cmd = [
             'count' => $this->name,
-            'query' => $query,
-            'limit' => $limit,
-            'skip' => $skip
-        ]);
+            'query' => $query
+        ];
+
+        if ($limit) {
+            $cmd['limit'] = $limit;
+        }
+
+        if ($skip) {
+            $cmd['skip'] = $skip;
+        }
+
+        $result = $this->db->command($cmd);
 
         if (isset($result['ok'])) {
             return (int) $result['n'];

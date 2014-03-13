@@ -38,7 +38,7 @@ class Protocol
         $bytesSent = 0;
         $payload = pack('V4', $bytes, $requestId, $responseTo, $opCode) . $opData;
         do {
-            $result = fwrite($this->socket, $payload);
+            $result = socket_write($this->socket, $payload);
             if (false === $result) {
                 // TODO handle write errors
                 throw new \RuntimeException('unhandled socket write error');
@@ -48,6 +48,18 @@ class Protocol
         } while ($bytesSent < $bytes);
 
         return $requestId;
+    }
+
+    private function readFromSocket($length)
+    {
+        $data = '';
+        socket_recv($this->socket, $data, $length, MSG_WAITALL);
+        if (false === $data) {
+            // TODO handle read errors
+            throw new \RuntimeException('unhandled socket read error');
+        }
+
+        return $data;
     }
 
     public function opUpdate($fullCollectionName, array $query, array $update, array $options = [])
@@ -118,17 +130,6 @@ class Protocol
             'start'    => $vars['startingFrom'],
             'count'    => $vars['numberReturned'],
         ];
-    }
-
-    private function readFromSocket($length)
-    {
-        $data = stream_get_contents($this->socket, $length);
-        if (false === $data) {
-            // TODO handle read errors
-            throw new \RuntimeException('unhandled socket read error');
-        }
-
-        return $data;
     }
 
     private function readHeaderFromSocket()
