@@ -1,6 +1,10 @@
 <?php
 
-class MongoClientTest extends BaseTest
+namespace Mongofill\Tests;
+
+use MongoClient;
+
+class MongoClientTest extends TestCase
 {
     function testServerOptions()
     {

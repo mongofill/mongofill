@@ -1,8 +1,16 @@
 <?php
 
-use Mongofill\Bson;
+namespace Mongofill\Tests\Mongofill;
 
-class BsonTest extends \PHPUnit_Framework_TestCase
+use Mongofill\Tests\TestCase;
+use Mongofill\Bson;
+use MongoInt32;
+use MongoBinData;
+use MongoTimestamp;
+use MongoRegex;
+use MongoCode;
+
+class BsonTest extends TestCase
 {
     public function testEncodeSingleString()
     {

@@ -1,6 +1,12 @@
 <?php
 
-class MongoGridFSFileTest extends BaseTest
+namespace Mongofill\Tests;
+
+use MongoId;
+use MongoDate;
+use MongoGridFSFile;
+
+class MongoGridFSFileTest extends TestCase
 {
     public function setUp()
     {

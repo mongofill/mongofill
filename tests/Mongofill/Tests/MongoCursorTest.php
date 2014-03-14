@@ -1,6 +1,8 @@
 <?php
 
-class MongoCursorTest extends BaseTest
+namespace Mongofill\Tests;
+
+class MongoCursorTest extends TestCase
 {
     public function setUp()
     {

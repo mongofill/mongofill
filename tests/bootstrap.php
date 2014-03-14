@@ -1,5 +1,4 @@
 <?php
 
-require_once __DIR__ . "/../vendor/autoload.php";
-
-define('TEST_DB', 'mongofill-test');
+$loader = require __DIR__ . "/../vendor/autoload.php";
+$loader->add('Mongofill\Tests', __DIR__);

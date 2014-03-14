@@ -1,6 +1,10 @@
 <?php
 
-class MongoIdTest extends PHPUnit_Framework_TestCase
+namespace Mongofill\Tests;
+
+use MongoId;
+
+class MongoIdTest extends TestCase
 {
     public function testGenerateId()
     {

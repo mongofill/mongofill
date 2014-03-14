@@ -1,6 +1,11 @@
 <?php
 
-class MongoDateTest extends BaseTest
+namespace Mongofill\Tests;
+
+use MongoId;
+use MongoDate;
+
+class MongoDateTest extends TestCase
 {
 
     function testDateInsert()

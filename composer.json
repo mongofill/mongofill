@@ -9,9 +9,17 @@
             "email": "husak.j@gmail.com"
         },
         {
-            "name": "thawkins"
+            "name":  "Máximo Cuadros",
+            "email": "mcuadros@gmail.com"
+        },
+        {
+            "name": "Mongofill Community",
+            "homepage": "https://github.com/koubas/mongofill/graphs/contributors"
         }
     ],
+    "require": {
+        "php": ">=5.4.0"
+    },
     "autoload": {
         "classmap": [
             { "Mongofill\\Util": "src/Mongofill/Util.php" },

@@ -1,6 +1,11 @@
 <?php
 
-class MongoCollectionTest extends BaseTest
+namespace Mongofill\Tests;
+
+use MongoId;
+use MongoCollection;
+
+class MongoCollectionTest extends TestCase
 {
     public function testInsert()
     {

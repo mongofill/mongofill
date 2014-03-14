@@ -1,7 +1,14 @@
 <?php
 
-abstract class BaseTest extends PHPUnit_Framework_TestCase
+namespace Mongofill\Tests;
+
+use PHPUnit_Framework_TestCase;
+use MongoClient;
+
+abstract class TestCase extends PHPUnit_Framework_TestCase
 {
+    const TEST_DB = 'mongofill-test';
+
     /**
      * @var MongoClient
      */
@@ -35,6 +42,6 @@ abstract class BaseTest extends PHPUnit_Framework_TestCase
      */
     public function getTestDB()
     {
-        return $this->getTestClient()->selectDB(TEST_DB);
+        return $this->getTestClient()->selectDB(self::TEST_DB);
     }
 }

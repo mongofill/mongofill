@@ -6,11 +6,8 @@
         backupGlobals="false"
         >
     <testsuites>
-        <testsuite name="Polyfilled Mongo Test Suite">
-            <directory>./tests/MongoTest/</directory>
-        </testsuite>
         <testsuite name="Mongofill Test Suite">
-            <directory>./tests/MongofillTest/</directory>
+            <directory>./tests/</directory>
         </testsuite>
     </testsuites>
 </phpunit>

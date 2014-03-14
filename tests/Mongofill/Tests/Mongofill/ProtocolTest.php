@@ -1,8 +1,11 @@
 <?php
 
+namespace Mongofill\Tests\Mongofill;
+
+use Mongofill\Tests\TestCase;
 use Mongofill\Protocol;
 
-class ProtocolTest extends PHPUnit_Framework_TestCase
+class ProtocolTest extends TestCase
 {
     private function getProtocol()
     {

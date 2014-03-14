@@ -1,6 +1,8 @@
 <?php
 
-class MongoDBTest extends BaseTest
+namespace Mongofill\Tests;
+
+class MongoDBTest extends TestCase
 {
     public function testListCollections()
     {

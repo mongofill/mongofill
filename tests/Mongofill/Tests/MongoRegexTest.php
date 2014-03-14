@@ -1,6 +1,10 @@
 <?php
 
-class MongoRegexTest extends PHPUnit_Framework_TestCase
+namespace Mongofill\Tests;
+
+use MongoRegex;
+
+class MongoRegexTest extends TestCase
 {
     function testConstruct()
     {

@@ -1,13 +1,17 @@
 <?php
 
-class MongoDBRefTest extends BaseTest
+namespace Mongofill\Tests;
+
+use MongoDBRef;
+
+class MongoDBRefTest extends TestCase
 {
     function testDBRef()
     {
         $mongo = $this->getTestClient();
         $db = $this->getTestDB();
         
-        $coll1 = $mongo->selectCollection(TEST_DB, 'dbref');
+        $coll1 = $mongo->selectCollection(self::TEST_DB, 'dbref');
         $coll1->drop();
         $doc = ['_id' => 123, 'x' => 'foo'];
         $coll1->insert($doc);
