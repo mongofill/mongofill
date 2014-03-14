@@ -20,6 +20,9 @@
     "require": {
         "php": ">=5.4.0"
     },
+    "require-dev": {
+        "athletic/athletic": "dev-master"
+    },
     "autoload": {
         "classmap": [
             { "Mongofill\\Util": "src/Mongofill/Util.php" },

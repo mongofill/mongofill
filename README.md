@@ -35,8 +35,20 @@ phpunit --configuration phpunit.xml.dist
 You can find helper script at `test/native/helper.sh`. Your system must have installed: mongodb, git, phpize and autotools
 
 ``` bash
-cd test/native/
+cd tests/native/
 ./helper.sh setup
 ./helper.sh boot
 ./helper.sh run
 ```
+
+
+Benchmarking
+---------
+
+A small suite of benchmarking is included with the package, you can run the suite with this command:
+
+``` bash
+php ./vendor/bin/athletic -b tests/bootstrap.php  -p tests/Mongofill/Benchmarks/
+```
+
+Some results can be find at: https://gist.github.com/mcuadros/9551290
