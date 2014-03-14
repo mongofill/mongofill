@@ -5,7 +5,7 @@ namespace Mongofill\Benchmarks;
 class InsertingEvent extends AthleticEvent
 {
     /**
-     * @iterations 10000
+     * @iterations 1000
      */
     public function simpleDocument()
     {
@@ -14,7 +14,7 @@ class InsertingEvent extends AthleticEvent
     }
 
     /**
-     * @iterations 3000
+     * @iterations 1000
      */
     public function simpleNestedDocument()
     {
@@ -23,16 +23,16 @@ class InsertingEvent extends AthleticEvent
     }
 
     /**
-     * @iterations 10000
+     * @iterations 1000
      */
     public function complexDocument()
     {
-        $record = $this->buildSimpleDocument();
+        $record = $this->buildComplexDocument();
         $this->getTestDB()->test->insert($record);
     }
 
     /**
-     * @iterations 3000
+     * @iterations 1000
      */
     public function complexNestedDocument()
     {

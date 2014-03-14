@@ -20,7 +20,7 @@ class UpdatingEvent extends AthleticEvent
     }
 
     /**
-     * @iterations 10000
+     * @iterations 1000
      */
     public function simpleDocument()
     {
@@ -36,7 +36,7 @@ class UpdatingEvent extends AthleticEvent
     }
 
     /**
-     * @iterations 3000
+     * @iterations 1000
      */
     public function simpleNestedDocument()
     {
@@ -52,7 +52,7 @@ class UpdatingEvent extends AthleticEvent
     }
 
     /**
-     * @iterations 10000
+     * @iterations 1000
      */
     public function complexDocument()
     {
@@ -68,7 +68,7 @@ class UpdatingEvent extends AthleticEvent
     }
 
     /**
-     * @iterations 3000
+     * @iterations 1000
      */
     public function complexNestedDocument()
     {

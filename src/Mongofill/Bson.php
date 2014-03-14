@@ -138,7 +138,7 @@ class Bson
         switch ($sig) {
             case self::ETYPE_ID:
                 $binId = Util::unpack('a12id', $data, $offset, 12)['id'];
-                $value = new \MongoId(bin2hex($binId));
+                $value = new \MongoId(str_pad(bin2hex($binId), 24, '0'));
                 break;
             case self::ETYPE_STRING:
             case self::ETYPE_SYMBOL:
