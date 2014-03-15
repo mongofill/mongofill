@@ -219,9 +219,11 @@ class MongoDB
      * @return MongoCollection - Returns a collection object representing
      *   the new collection.
      */
-    public function createCollection($name, array $options)
+    public function createCollection($name, array $options = [])
     {
-        throw new Exception('Not Implemented');
+        $options['create'] = $name;
+
+        return $this->command($options);
     }
 
     /**
