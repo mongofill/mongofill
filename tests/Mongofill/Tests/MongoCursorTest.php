@@ -153,7 +153,48 @@ class MongoCursorTest extends TestCase
         $this->assertSame(500, $this->coll->find()->limit(10)->count());
     }
 
-   public function testCountWithSkip()
+    public function testReset()
+    {
+        $this->createNDocuments(500);
+
+        $result = $this->coll->find();
+        $this->assertSame(10, $result->limit(10)->count(true));
+
+        $result->reset();
+        $this->assertSame(20, $result->limit(20)->count(true));
+
+    }
+
+    public function testGetNext()
+    {
+        $this->createNDocuments(10);
+
+        $result = $this->coll->find();
+        
+        $record = $result->getNext();
+        $this->assertSame(1, $record['foo']);
+
+        $record = $result->getNext();
+        $this->assertSame(2, $record['foo']);
+
+        $result->rewind();
+        $record = $result->getNext();
+        $this->assertSame(1, $record['foo']);
+    }
+
+    public function testHasNext()
+    {
+        $this->createNDocuments(2);
+
+        $result = $this->coll->find();
+        
+        $this->assertTrue($result->hasNext());
+
+        $result->next();
+        $this->assertFalse($result->hasNext());
+    }
+
+    public function testCountWithSkip()
     {
         $this->createNDocuments(500);
         $this->assertSame(500, $this->coll->find()->limit(10)->skip(10)->count());

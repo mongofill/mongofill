@@ -97,7 +97,21 @@ class MongoCursor implements Iterator
         $this->fcn = $ns;
         $this->fields = $fields;
         $this->query['$query'] = $query;
+    }
 
+    /**
+     * Clears the cursor
+     *
+     * @return void - NULL.
+     */
+    public function reset()
+    {
+        $this->documents = [];
+        $this->currKey = 0;
+        $this->cursorId = null;
+        $this->end = false; 
+        $this->fetching = false;
+        $this->hasMore = false;
     }
 
     /**
@@ -350,6 +364,19 @@ class MongoCursor implements Iterator
         return 0;
     }
 
+    private function fetchMoreDocumentsIfNeeded()
+    {
+        if (isset($this->documents[$this->currKey+1])) {
+            return;
+        }
+
+        if ($this->cursorId) {
+            $this->fetchMoreDocuments();
+        } else {
+            $this->end = true;
+        }
+    }
+    
     private function fetchMoreDocuments()
     {
         $limit = $this->calculateNextRequestLimit();    
@@ -442,18 +469,11 @@ class MongoCursor implements Iterator
      * @return array - Returns the next object.
      */
     public function getNext()
-    {
-        throw new Exception('Not Implemented');
-    }
+    {        
+        $record = $this->current();
+        $this->next();
 
-    /**
-     * Get the read preference for this query
-     *
-     * @return array -
-     */
-    public function getReadPreference()
-    {
-        throw new Exception('Not Implemented');
+        return $record;
     }
 
     /**
@@ -462,6 +482,19 @@ class MongoCursor implements Iterator
      * @return bool - Returns if there is another element.
      */
     public function hasNext()
+    {
+        $this->doQuery();
+        $this->fetchMoreDocumentsIfNeeded();
+
+        return isset($this->documents[$this->currKey+1]);
+    }
+
+    /**
+     * Get the read preference for this query
+     *
+     * @return array -
+     */
+    public function getReadPreference()
     {
         throw new Exception('Not Implemented');
     }
@@ -486,16 +519,6 @@ class MongoCursor implements Iterator
      * @return MongoCursor - Returns this cursor.
      */
     public function partial($okay = true)
-    {
-        throw new Exception('Not Implemented');
-    }
-
-    /**
-     * Clears the cursor
-     *
-     * @return void - NULL.
-     */
-    public function reset()
     {
         throw new Exception('Not Implemented');
     }
@@ -592,13 +615,7 @@ class MongoCursor implements Iterator
     public function next()
     {
         $this->doQuery();
-        if (!isset($this->documents[$this->currKey+1])) {
-            if ($this->cursorId) {
-                $this->fetchMoreDocuments();
-            } else {
-                $this->end = true;
-            }
-        }
+        $this->fetchMoreDocumentsIfNeeded();
 
         $this->currKey++;
     }
