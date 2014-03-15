@@ -166,10 +166,30 @@ class MongoCollection
      *   document when new is set.
      */
     public function findAndModify(
-        array $query, array $update, array $fields, array $options
+        array $query, array $update = null, array $fields = null, array $options
     )
     {
-        throw new Exception('Not Implemented');
+        $command = ['findandmodify' => $this->name];
+
+        if ($query) {
+            $command['query'] = $query;
+        }
+
+        if ($update) {
+            $command['update'] = $update;
+        }
+
+        if ($fields) {
+            $command['fields'] = $fields;
+        }
+
+        $command = array_merge($command, $options);
+        $result = $this->db->command($command);
+        
+        if (isset($result['value'])) {
+            return $result['value'];
+        }
+        return null;
     }
 
     /**
