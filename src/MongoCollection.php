@@ -147,7 +147,7 @@ class MongoCollection
      *
      * @return array - Returns record matching the search or NULL.
      */
-    public function findOne(array $query = [], array $fields = [])
+    public function findOne($query = [], array $fields = [])
     {
         $cur = $this->find($query, $fields)->limit(1);
 
@@ -317,6 +317,7 @@ class MongoCollection
         $this->protocol->opDelete($this->fqn, $criteria, $options);
 
         //TODO: Correct return behavior
+        return true;
     }
 
     /**

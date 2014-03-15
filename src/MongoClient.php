@@ -180,7 +180,7 @@ class MongoClient
     public function close($connection = null)
     {
         if (null !== $this->socket) {
-            fclose($this->socket);
+            socket_close($this->socket);
             $this->protocol = null;
         }
 

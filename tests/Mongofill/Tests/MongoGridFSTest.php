@@ -19,10 +19,10 @@ class MongoGridFSTest extends TestCase
         $filename = __DIR__ . MongoGridFSTest::EXAMPLE_BIN_FILE;
         $this->grid->storeFile($filename);
 
-        $file = $this->grid->findOne(basename($filename));
+        $file = $this->grid->findOne($filename);
 
         $this->assertInstanceOf('MongoGridFSFile', $file);
-        $this->assertSame(basename($filename), $file->getFilename());
+        $this->assertSame($filename, $file->getFilename());
     }
 
     public function testGet()
@@ -33,7 +33,7 @@ class MongoGridFSTest extends TestCase
         $file = $this->grid->get($id);
 
         $this->assertInstanceOf('MongoGridFSFile', $file);
-        $this->assertSame(basename($filename), $file->getFilename());
+        $this->assertSame($filename, $file->getFilename());
     }
 
     public function testDrop()
@@ -50,7 +50,7 @@ class MongoGridFSTest extends TestCase
         $this->assertSame(0, $chunks->find()->count());
     }
 
-    public function testRemove()
+    public function testDelete()
     {
         $filename = __DIR__ . MongoGridFSTest::EXAMPLE_BIN_FILE;
         $id = $this->grid->storeFile($filename);
@@ -72,7 +72,7 @@ class MongoGridFSTest extends TestCase
         $id = $this->grid->put($filename, $metadata);
         $this->assertInstanceOf('MongoId', $id);
 
-        $file = $this->grid->findOne(basename($filename));
+        $file = $this->grid->findOne($filename);
         $this->assertInstanceOf('MongoGridFSFile', $file);
     }
 
@@ -80,14 +80,13 @@ class MongoGridFSTest extends TestCase
     {
         $metadata = [
             '_id' => 'numbers',
-            'foo' => 'bar'
+            'foo' => 'bar',
+            'chunkSize' => 10
         ];
-
-        $options = ['chunkSize' => 10];
 
         $bytes = '123456789012345678901234567890';
 
-        $id = $this->grid->storeBytes($bytes, $metadata, $options);
+        $id = $this->grid->storeBytes($bytes, $metadata);
         $this->assertSame($metadata['_id'], $id);
 
         $file = $this->grid->get($id);
@@ -114,12 +113,12 @@ class MongoGridFSTest extends TestCase
         $id = $this->grid->storeFile($filename, $metadata);
         $this->assertInstanceOf('MongoId', $id);
 
-        $file = $this->grid->findOne(basename($filename));
+        $file = $this->grid->findOne($filename);
         $this->assertInstanceOf('MongoGridFSFile', $file);
 
         $this->assertSame((string) $id, (string) $file->file['_id']);
         $this->assertSame('bar', $file->file['foo']);
-        $this->assertSame(basename($filename), $file->file['filename']);
+        $this->assertSame($filename, $file->file['filename']);
         $this->assertSame(MongoGridFS::DEFAULT_CHUNK_SIZE, $file->file['chunkSize']);
         $this->assertInstanceOf('MongoDate', $file->file['uploadDate']);
         $this->assertSame(filesize($filename), $file->file['length']);
@@ -139,7 +138,7 @@ class MongoGridFSTest extends TestCase
         $id = $this->grid->storeUpload('test');
         $this->assertInstanceOf('MongoId', $id[0]);
 
-        $file = $this->grid->findOne(basename($_FILES['test']['name']));
+        $file = $this->grid->findOne($_FILES['test']['name']);
         $this->assertInstanceOf('MongoGridFSFile', $file);
 
         $chunks = $this->grid->chunks;

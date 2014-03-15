@@ -3,7 +3,7 @@
 /**
  * Cursor for database file results.
  */
-class MongoGridFSCursor
+class MongoGridFSCursor extends MongoCursor
 {
     /**
      * @var MongoClient
@@ -35,7 +35,8 @@ class MongoGridFSCursor
     )
     {
         $this->gridfs = $gridfs;
-        $this->cursor = new MongoCursor($connection, $ns, $query, $fields);
+        
+        parent::__construct($connection, $ns, $query, $fields);
     }
 
     /**
@@ -45,7 +46,7 @@ class MongoGridFSCursor
      */
     public function current()
     {
-        $current = $this->cursor->current();
+        $current = parent::current();
         if (!$current) {
             return null;
         }
@@ -60,7 +61,7 @@ class MongoGridFSCursor
      */
     public function getNext()
     {
-        $this->cursor->getNext();
+        parent::getNext();
 
         return $this->current();
     }
@@ -72,32 +73,32 @@ class MongoGridFSCursor
      */
     public function key()
     {
-        return $this->cursor->key();
+        return parent::key();
     }
 
     public function limit($limit)
     {
-        $this->cursor->limit($limit);
+        parent::limit($limit);
 
         return $this;
     }
 
-    public function sort($fields)
+    public function sort(array $fields)
     {
-        $this->cursor->sort($fields);
+        parent::sort($fields);
 
         return $this;
     }
 
     public function skip($skip)
     {
-        $this->cursor->skip($skip);
+        parent::skip($skip);
 
         return $this;
     }
 
     public function count($foundOnly = false)
     {
-        return $this->cursor->count($foundOnly);
+        return parent::count($foundOnly);
     }
 }

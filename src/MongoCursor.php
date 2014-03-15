@@ -526,7 +526,7 @@ class MongoCursor implements Iterator
      *
      * @return MongoCursor - Returns this cursor.
      */
-    public function setReadPreference($readPreference, array $tags)
+    public function setReadPreference($readPreference, array $tags = [])
     {
         throw new Exception('Not Implemented');
     }

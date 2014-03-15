@@ -31,7 +31,7 @@ class MongoGridFSFileTest extends TestCase
         $filename = __DIR__ . MongoGridFSTest::EXAMPLE_BIN_FILE;
         $this->grid->storeFile($filename);
 
-        $file = $this->grid->findOne(basename($filename));
+        $file = $this->grid->findOne($filename);
         $this->assertSame(filesize($filename), strlen($file->getBytes()));
     }
 
@@ -42,7 +42,7 @@ class MongoGridFSFileTest extends TestCase
         $filename = __DIR__ . MongoGridFSTest::EXAMPLE_BIN_FILE;
         $this->grid->storeFile($filename);
 
-        $file = $this->grid->findOne(basename($filename));
+        $file = $this->grid->findOne($filename);
         $file->write($output);
 
         $this->assertTrue(file_exists($output));

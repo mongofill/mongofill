@@ -3,7 +3,8 @@
 /**
  * Utilities for storing and retrieving files from the database.   
  */
-class MongoGridFS {
+class MongoGridFS extends MongoCollection
+{
     const DEFAULT_CHUNK_SIZE = 262144; //256k
 
     /**
@@ -41,11 +42,12 @@ class MongoGridFS {
     public function __construct(MongoDB $db, $prefix = 'fs', $chunks = 'fs')
     {
         $this->db = $db;
-        $this->filesName = $prefix . '.files';
+        $thisName = $prefix . '.files';
         $this->chunksName = $prefix . '.chunks';
 
-        $this->files = $db->selectCollection($this->filesName);
         $this->chunks = $db->selectCollection($this->chunksName);
+
+        parent::__construct($db, $thisName);
     }
 
     /**
@@ -67,7 +69,7 @@ class MongoGridFS {
     public function drop()
     {
         $this->chunks->drop();
-        $this->files->drop();
+        parent::drop();
     }
 
     /**
@@ -82,7 +84,7 @@ class MongoGridFS {
         return new MongoGridFSCursor(
             $this,
             $this->db->_getClient(), 
-            $this->files->__toString(),
+            $this->__toString(),
             $query,
             $fields
         );
@@ -139,8 +141,7 @@ class MongoGridFS {
     public function remove(array $criteria = [],  array $options = [])
     {
         //TODO: implement $options
-
-        $files = $this->files->find($criteria, ['_id' => 1]);
+        $files = parent::find($criteria, ['_id' => 1]);
         $ids = [];
         foreach ($files as $record) {
             $ids[] = $record['_id'];
@@ -150,15 +151,13 @@ class MongoGridFS {
             return false;
         }
 
-        $this->files->remove(['_id' => [
-            '$in' => $ids
-        ]]);
-
         $this->chunks->remove(['files_id' => [
             '$in' => $ids
         ]]);
 
-        return true;
+        return parent::remove(['_id' => [
+            '$in' => $ids
+        ]], $options);
     }
 
     /**
@@ -173,8 +172,8 @@ class MongoGridFS {
     public function storeBytes($bytes, array $metadata = [], array $options = [])
     {
         $chunkSize = self::DEFAULT_CHUNK_SIZE;
-        if (isset($options['chunkSize'])) {
-            $chunkSize = $options['chunkSize'];
+        if (isset($metadata['chunkSize'])) {
+            $chunkSize = $metadata['chunkSize'];
         }
 
         $file = $this->insertFileFromBytes($bytes, $metadata, $chunkSize);
@@ -193,7 +192,7 @@ class MongoGridFS {
         ];
 
         $record = array_merge($metadata, $record);
-        $this->files->insert($record);
+        $this->insert($record);
 
         return $record;
     }
@@ -225,8 +224,8 @@ class MongoGridFS {
         $this->throwExceptionIfFilenameNotExists($filename);
 
         $chunkSize = self::DEFAULT_CHUNK_SIZE;
-        if (isset($options['chunkSize'])) {
-            $chunkSize = $options['chunkSize'];
+        if (isset($metadata['chunkSize'])) {
+            $chunkSize = $metadata['chunkSize'];
         }
 
         $file = $this->insertFileFromFilename($filename, $metadata, $chunkSize);
@@ -248,7 +247,7 @@ class MongoGridFS {
     private function insertFileFromFilename($filename, array $metadata, $chunkSize)
     {
         $record = [
-            'filename' => basename($filename),
+            'filename' => $filename,
             'uploadDate' => new MongoDate(),
             'chunkSize' => $chunkSize,
             'length' => filesize($filename),
@@ -260,7 +259,7 @@ class MongoGridFS {
         }
 
         $record = array_merge($metadata, $record);
-        $this->files->insert($record);
+        $this->insert($record);
 
         return $record;
     }
@@ -311,7 +310,7 @@ class MongoGridFS {
 
         $results = [];
         foreach ($uploaded['tmp_name'] as $key => $file) {
-            $metadata['filename'] = basename($uploaded['name'][$key]);
+            $metadata['filename'] = $uploaded['name'][$key];
             $results[] = $this->storeFile($file, $metadata);
         }
 

@@ -23,7 +23,7 @@ class MongoGridFSFile
      *
      * @return  - Returns a new MongoGridFSFile.
      */
-    public function __construct(MongoGridFS $gridfs,  array $file)
+    public function __construct(MongoGridFS $gridfs, array $file)
     {
         $this->gridfs = $gridfs;
         $this->file = $file;
