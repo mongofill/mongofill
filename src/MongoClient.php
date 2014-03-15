@@ -12,9 +12,9 @@ class MongoClient
     const DEFAULT_PORT = 27017;
     const RP_PRIMARY   = 'primary';
     const RP_PRIMARY_PREFERRED = 'primaryPreferred';
-    const PR_SECONDARY = 'secondary';
-    const PR_SECONDARY_PREFERRED = 'secondaryPreferred';
-    const PR_NEAREST   = 'nearest';
+    const RP_SECONDARY = 'secondary';
+    const RP_SECONDARY_PREFERRED = 'secondaryPreferred';
+    const RP_NEAREST   = 'nearest';
 
     /**
      * @var boolean
