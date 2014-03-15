@@ -30,6 +30,7 @@
             { "Mongofill\\Protocol": "src/Mongofill/Protocol.php" },
             { "MongoBinData": "src/MongoBinData.php" },
             { "MongoClient": "src/MongoClient.php" },
+            { "Mongo": "src/Mongo.php" },
             { "MongoDB": "src/MongoDB.php" },
             { "MongoDBRef": "src/MongoDBRef.php" },
             { "MongoDate": "src/MongoDate.php" },
