@@ -10,12 +10,12 @@ class MongoCollectionTest extends TestCase
     public function testInsert()
     {
         $coll = $this->getTestDB()->selectCollection('testInsert');
-        
+
         $data = [
             'foo' => 'bar',
             'boolean' => false
         ];
-        
+
         $coll->insert($data);
 
         $this->assertCount(1, $coll->find());
@@ -25,7 +25,7 @@ class MongoCollectionTest extends TestCase
     public function testBatchInsert()
     {
         $coll = $this->getTestDB()->selectCollection('testInsert');
-        
+
         $data = [
             ['foo' => 'bar'],
             ['foo' => 'qux']
@@ -42,7 +42,7 @@ class MongoCollectionTest extends TestCase
     public function testBatchInsertWithKeys()
     {
         $coll = $this->getTestDB()->selectCollection('testInsert');
-        
+
         $data = [
             'foo' => ['foo' => 'bar'],
             'bar' => ['foo' => 'qux']
@@ -74,7 +74,7 @@ class MongoCollectionTest extends TestCase
     public function testRemove()
     {
         $coll = $this->getTestDB()->selectCollection('testDelete');
-        
+
         $data = [
             '_id' => new MongoId('000000000000000000000001'),
             'foo' => 'bar'
@@ -105,7 +105,7 @@ class MongoCollectionTest extends TestCase
             'foo' => 'qux'
         ];
         $coll->insert($data);
-        
+
         $this->assertCount(3, $coll->find());
 
         $coll->remove(['foo' => 'qux']);
@@ -165,11 +165,40 @@ class MongoCollectionTest extends TestCase
         $this->assertEquals('bar', $record['foo']);
         $record['foo'] = 'notbar';
         $coll->update(['_id'=> $record['_id']], ['$set'=>['foo'=>'notbar']]);
-        
+
         $result = iterator_to_array($coll->find(['_id'=> $record['_id']]));
         $this->assertCount(1, $result);
         $this->assertEquals('notbar', $record['foo']);
      }
+
+    public function testFindAndModify()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $coll->findAndModify(
+            ['name'=>'bar'],
+            ['$inc' => ['value' => 1]],
+            null,
+            ['new' => false, 'upsert' => true]
+        );
+
+        $result = iterator_to_array($coll->find());
+        $this->assertCount(1, $result);
+
+        $record = current($result);
+
+        $this->assertEquals('bar', $record['name']);
+        $this->assertEquals(1, $record['value']);
+
+        $record = $coll->findAndModify(
+            ['name'=>'bar'],
+            ['$inc' => ['value' => 1]],
+            null,
+            ['new' => true, 'upsert' => true]
+        );
+
+        $this->assertEquals('bar', $record['name']);
+        $this->assertEquals(2, $record['value']);
+    }
 
     public function testSave()
     {
@@ -229,7 +258,7 @@ class MongoCollectionTest extends TestCase
     {
         $expected = 'foo_-1_bar_1';
         $index = ['foo' => -1, 'bar' => 1];
-        
+
         $result = MongoCollectionWrapper::toIndexString($index);
         $this->assertSame($expected, $result);
     }
@@ -238,14 +267,14 @@ class MongoCollectionTest extends TestCase
     {
         $expected = 'qux_text_baz_text';
         $index = [
-            'foo' => -1, 
+            'foo' => -1,
             'bar' => 1,
             'weights' => [
                 'qux' => 30,
                 'baz' => 10
             ]
         ];
-        
+
         $result = MongoCollectionWrapper::toIndexString($index);
         $this->assertSame($expected, $result);
     }
