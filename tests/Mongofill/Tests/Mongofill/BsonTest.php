@@ -9,6 +9,8 @@ use MongoBinData;
 use MongoTimestamp;
 use MongoRegex;
 use MongoCode;
+use MongoMaxKey;
+use MongoMinKey;
 
 class BsonTest extends TestCase
 {
@@ -158,7 +160,16 @@ class BsonTest extends TestCase
         $input = [(object) ['foo' => 1, 'bar' => 2]];
         $expect = "'\000\000\000\0030\000\037\000\000\000\022foo\000\001\000\000\000\000\000\000\000\022bar\000\002\000\000\000\000\000\000\000\000\000";
         $this->assertEquals($expect,  Bson::encode($input));
-    } 
+    }
+
+    public function testEncodeMinKeyMaxKey()
+    {
+        $input = [ 'min' => new MongoMinKey(), 'max' => new MongoMaxKey() ];
+        $bson = Bson::encode($input);
+        $out = Bson::decode($bson);
+        $this->assertEquals($input, $out);
+        $this->assertEquals('0f000000ff6d696e007f6d61780000', bin2hex($bson));
+    }
 
     public function testIsDocument()
     {

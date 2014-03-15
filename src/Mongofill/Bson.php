@@ -23,6 +23,8 @@ class Bson
     const ETYPE_REGEX    = 0x0b;
     const ETYPE_SYMBOL   = 0x0e;
     const ETYPE_TIMESTAMP= 0x11;
+    const ETYPE_MAXKEY   = 0x7F;
+    const ETYPE_MINKEY   = 0xFF;
 
     public static function encode(array $value)
     {
@@ -102,6 +104,14 @@ class Bson
 
                 $bin = pack('V', $length) . $bin;
                 $sig  = self::ETYPE_BINARY;
+                break;
+            case $value instanceof \MongoMaxKey:
+                $bin = '';
+                $sig = self::ETYPE_MAXKEY;
+                break;
+            case $value instanceof \MongoMinKey:
+                $bin = '';
+                $sig = self::ETYPE_MINKEY;
                 break;
             case is_object($value):
                 $value = get_object_vars($value);
@@ -222,6 +232,12 @@ class Bson
                 $bin = substr($data, $offset, $len);
                 $value = new \MongoBinData($bin, $subtype);
                 $offset += strlen($bin);
+                break;
+            case self::ETYPE_MAXKEY:
+                $value = new \MongoMaxKey;
+                break;
+            case self::ETYPE_MINKEY:
+                $value = new \MongoMinKey;
                 break;
             default:
                 throw new \RuntimeException('Invalid signature: 0x' . dechex($sig));
