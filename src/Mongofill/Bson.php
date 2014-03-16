@@ -41,95 +41,92 @@ class Bson
 
     private static function encElement($name, $value)
     {
-        switch (true) {
-            case $value instanceof \MongoId:
-                $bin = hex2bin($value);
-                $sig = self::ETYPE_ID;
-                if (strlen($bin) != 12) throw new \RuntimeException('Invalid MongoId value');
+        switch (gettype($value)) {
+            case 'object':
+                if ($value instanceof \MongoId) {
+                    $bin = hex2bin($value);
+                    $sig = self::ETYPE_ID;
+                    if (strlen($bin) != 12) throw new \RuntimeException('Invalid MongoId value');
+                } elseif ($value instanceof \MongoInt64) {
+                    $value = (int) (string) $value;
+                    $i1 = $value & 0xffffffff;
+                    $i2 = ($value >> 32) & 0xffffffff;
+                    $bin = pack('V2', $i1, $i2);
+                    $sig  = self::ETYPE_INT64;
+                } elseif ($value instanceof \MongoInt32) {
+                    $bin = pack('V', (int) (string) $value);
+                    $sig  = self::ETYPE_INT32;
+                } elseif ($value instanceof \MongoCode) {
+                    $scope = self::encDocument($value->getScope());
+                    $code = pack('V', strlen($value)+1) . $value . "\0";
+                    $bin = pack('V', strlen($code) + strlen($scope) + 4) . $code . $scope;
+                    $sig = self::ETYPE_CODE_W_S;
+                } elseif ($value instanceof \MongoRegex) {
+                    $bin = $value->regex . "\0" . $value->flags . "\0";
+                    $sig  = self::ETYPE_REGEX;
+                } elseif ($value instanceof \MongoDate) {
+                    $bin = pack('V2', $value->sec, $value->usec);
+                    $sig = self::ETYPE_DATE;
+                } elseif ($value instanceof \MongoTimestamp) {
+                    $bin = pack('V2', $value->inc, $value->sec);
+                    $sig = self::ETYPE_TIMESTAMP;
+                } elseif ($value instanceof \MongoBinData) {
+                    $length = strlen($value->bin);
+                    if ($value->type != 2) {
+                        $bin = pack('C', $value->type) . $value->bin;
+                    } else {
+                        $bin = pack('CV', $value->type, $length) . $value->bin;
+                        $length += 4;
+                    }
+
+                    $bin = pack('V', $length) . $bin;
+                    $sig  = self::ETYPE_BINARY;
+                } elseif ($value instanceof \MongoMaxKey) {
+                    $bin = '';
+                    $sig = self::ETYPE_MAXKEY;
+                } elseif ($value instanceof \MongoMinKey) {
+                    $bin = '';
+                    $sig = self::ETYPE_MINKEY;
+                } else {
+                    $value = get_object_vars($value);
+                    $bin = self::encDocument($value);
+                    $sig = self::ETYPE_DOCUMENT;
+                }
                 break;
-            case $value instanceof \MongoInt64:
-                $value = (int) (string) $value;
-            case is_int($value):
+            case 'string':
+                $bin = pack('V', strlen($value)+1) . $value . "\0";
+                $sig  = self::ETYPE_STRING;
+                break;
+            case 'integer':
                 $i1 = $value & 0xffffffff;
                 $i2 = ($value >> 32) & 0xffffffff;
                 $bin = pack('V2', $i1, $i2);
                 $sig  = self::ETYPE_INT64;
                 break;
-            case is_bool($value):
-                $bin = pack('C', $value);
-                $sig  = self::ETYPE_BOOL;
-                break;
-            case is_null($value):
-                $bin = '';
-                $sig = self::ETYPE_NULL;
-                break;
-            case $value instanceof \MongoInt32:
-                $bin = pack('V', (int) (string) $value);
-                $sig  = self::ETYPE_INT32;
-                break;
-            case is_float($value):
+            case 'double':
                 $bin = pack('d', $value);
                 $sig  = self::ETYPE_DOUBLE;
                 break;
-            case is_string($value):
-                $bin = pack('Va*', strlen($value)+1, "$value\0");
-                $sig  = self::ETYPE_STRING;
-                break;
-            case $value instanceof \MongoCode:
-                $scope = self::encDocument($value->getScope());
-                $code = pack('Va*', strlen($value)+1, "$value\0");
-                $bin = pack('V', strlen($code) + strlen($scope) + 4).$code.$scope;
-                $sig = self::ETYPE_CODE_W_S;
-                break;
-            case $value instanceof \MongoRegex:
-                $bin = $value->regex."\0".$value->flags."\0";
-                $sig  = self::ETYPE_REGEX;
-                break;
-            case $value instanceof \MongoDate:
-                $bin = pack('V2', $value->sec, $value->usec);
-                $sig = self::ETYPE_DATE;
-                break;
-            case $value instanceof \MongoTimestamp:
-                $bin = pack('V2', $value->inc, $value->sec);
-                $sig = self::ETYPE_TIMESTAMP;
-                break;
-            case $value instanceof \MongoBinData:
-                $length = strlen($value->bin);
-                if ($value->type != 2) {
-                    $bin = pack('C', $value->type) . $value->bin;
-                } else {
-                    $bin = pack('CV', $value->type, $length) . $value->bin;
-                    $length += 4;
-                }
-
-                $bin = pack('V', $length) . $bin;
-                $sig  = self::ETYPE_BINARY;
-                break;
-            case $value instanceof \MongoMaxKey:
-                $bin = '';
-                $sig = self::ETYPE_MAXKEY;
-                break;
-            case $value instanceof \MongoMinKey:
-                $bin = '';
-                $sig = self::ETYPE_MINKEY;
-                break;
-            case is_object($value):
-                $value = get_object_vars($value);
-                $bin = self::encDocument($value);
-                $sig = self::ETYPE_DOCUMENT;
-                break;
-            case is_array($value):
+            case 'array':
                 $bin = self::encDocument($value);
                 $sig = self::ETYPE_ARRAY;
                 if (self::isDocument($value)) {
                     $sig = self::ETYPE_DOCUMENT;
                 }
                 break;
+            case 'boolean':
+                $bin = pack('C', $value);
+                $sig  = self::ETYPE_BOOL;
+                break;
+            case 'NULL':
+                $bin = '';
+                $sig  = self::ETYPE_NULL;
+                break;
             default:
                 throw new \RuntimeException('Unsupported value type: ' . gettype($value));
         }
 
-        return chr($sig) . "$name\0" . $bin;
+        return chr($sig) . $name . "\0" . $bin;
     }
 
     private static function encDocument(array $values)
@@ -139,7 +136,7 @@ class Bson
             $data .= self::encElement($key, $value);
         }
 
-        return pack('Va*', strlen($data)+5, "$data\0");
+        return pack('V', strlen($data)+5) . $data . "\0";
     }
 
     private static function decElement($data, &$offset)
@@ -198,7 +195,7 @@ class Bson
             case self::ETYPE_REGEX:
                 $regex = Util::parseCString($data, $offset);
                 $flags = Util::parseCString($data, $offset);
-                $value = new \MongoRegex('/'.$regex.'/'.$flags);
+                $value = new \MongoRegex('/' . $regex . '/' . $flags);
                 break;
             case self::ETYPE_DATE:
                 $vars = Util::unpack('V2i', $data, $offset, 8);
