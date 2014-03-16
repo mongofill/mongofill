@@ -207,12 +207,10 @@ class MongoCollection
      */
     public function insert(&$document, array $options = [])
     {
+        $this->fillIdInDocumentIfNeeded($document);
         $documents = [&$document];
-        $this->batchInsert($documents, $options);
-
-        // Fake response for async insert -
-        // TODO: detect "w" option and return status array
-        return true;
+    
+        return $this->protocol->opInsert($this->fqn, $documents, $options);
     }
 
     /**
@@ -231,20 +229,25 @@ class MongoCollection
         $count = count($documents);
         $keys = array_keys($documents);
         for ($i=0; $i < $count; $i++) {
-            if (is_object($documents[$keys[$i]])) {
-                $documents[$keys[$i]] = get_object_vars($documents[$keys[$i]]);
-            }
-
-            if (!isset($documents[$keys[$i]]['_id'])) {
-                $documents[$keys[$i]]['_id'] = new MongoId();
-            }
+            $this->fillIdInDocumentIfNeeded($documents[$keys[$i]]);
         }
 
-        $this->protocol->opInsert($this->fqn, $documents, false);
+        $this->protocol->opInsert($this->fqn, $documents, $options);
 
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
         return true;
+    }
+
+    private function fillIdInDocumentIfNeeded(&$document)
+    {
+        if (is_object($document)) {
+            $document = get_object_vars($document);
+        }
+
+        if (!isset($document['_id'])) {
+            $document['_id'] = new MongoId();
+        }
     }
 
     /**
@@ -263,9 +266,7 @@ class MongoCollection
      */
     public function update(array $criteria, array $newObject, array $options = [])
     {
-        $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
-
-        //TODO: Correct return behavior
+        return $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
     }
 
     /**
@@ -290,14 +291,10 @@ class MongoCollection
         }
 
         if (isset($document['_id'])) {
-            $this->update(['_id' => $document['_id']], $document, $options);
+            return $this->update(['_id' => $document['_id']], $document, $options);
         } else {
             return $this->insert($document, $options);
         }
-
-        //TODO: Handle timeout
-        //TODO: Correct return behavior
-        return true;
     }
 
     /**
@@ -314,10 +311,7 @@ class MongoCollection
      */
     public function remove(array $criteria = [], array $options = [])
     {
-        $this->protocol->opDelete($this->fqn, $criteria, $options);
-
-        //TODO: Correct return behavior
-        return true;
+        return $this->protocol->opDelete($this->fqn, $criteria, $options);
     }
 
     /**

@@ -55,7 +55,7 @@ class MongoGridFSTest extends TestCase
         $filename = __DIR__ . MongoGridFSTest::EXAMPLE_BIN_FILE;
         $id = $this->grid->storeFile($filename);
 
-        $this->assertTrue($this->grid->delete($id));
+        $this->assertSame(1, (int) $this->grid->delete($id)['ok']);
 
         $chunks = $this->getTestDB()->{'fs.chunks'};
         $this->assertSame(0, $chunks->find()->count());

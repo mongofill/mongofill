@@ -10,7 +10,24 @@ class InsertingEvent extends AthleticEvent
     public function simpleDocument()
     {
         $record = $this->buildSimpleDocument();
-        $this->getTestDB()->test->insert($record);
+        $r = $this->getTestDB()->test->insert($record, ['w' => 1]);
+       
+        if ($r['ok'] != 1) {
+            throw new \Exception('Non ok result at simpleDocumentW0'. json_encode($r));
+        }
+    }
+
+    /**
+     * @iterations 1000
+     */
+    public function simpleDocumentW0()
+    {
+        $record = $this->buildSimpleDocument();
+        $r = $this->getTestDB()->test->insert($record, ['w' => 0]);
+
+        if ($r !== true) {
+            throw new \Exception('Non true result at simpleDocumentW0');
+        }
     }
 
     /**

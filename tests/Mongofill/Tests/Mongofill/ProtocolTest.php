@@ -4,14 +4,15 @@ namespace Mongofill\Tests\Mongofill;
 
 use Mongofill\Tests\TestCase;
 use Mongofill\Protocol;
+use Mongofill\Socket;
 
 class ProtocolTest extends TestCase
 {
     private function getProtocol()
     {
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        socket_connect($socket, 'localhost', 27017);
-
+        $socket = new Socket('localhost', 27017);
+        $socket->connect();
+        
         $proto = new Protocol($socket);
         
         return $proto;
@@ -20,7 +21,7 @@ class ProtocolTest extends TestCase
     public function testInsertPasses()
     {
         $conn = $this->getProtocol();
-        $conn->opInsert('mongofill.instest', [ [ 'foo' => 'bar' ] ], false);
+        $conn->opInsert('mongofill.instest', [ [ 'foo' => 'bar' ] ]);
     }
 
     public function testQuery()

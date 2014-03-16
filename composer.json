@@ -25,9 +25,7 @@
     },
     "autoload": {
         "classmap": [
-            { "Mongofill\\Util": "src/Mongofill/Util.php" },
-            { "Mongofill\\Bson": "src/Mongofill/Bson.php" },
-            { "Mongofill\\Protocol": "src/Mongofill/Protocol.php" },
+            { "Mongofill": "src/" },
             { "Mongo": "src/Mongo.php" },
             { "MongoBinData": "src/MongoBinData.php" },
             { "MongoClient": "src/MongoClient.php" },

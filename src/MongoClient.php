@@ -1,6 +1,7 @@
 <?php
 
 use Mongofill\Protocol;
+use Mongofill\Socket;
 
 /**
  * A connection manager for PHP and MongoDB.
@@ -99,6 +100,7 @@ class MongoClient
             $this->port = $options['port'];
         }
 
+        $this->socket = new Socket($this->host, $this->port);
         $this->server = "mongodb://{$this->host}:{$this->port}";
 
         if (isset($options['connect']) && $options['connect']) {
@@ -125,45 +127,14 @@ class MongoClient
      */
     public function connect()
     {
-        if ($this->socket) {
+        if ($this->protocol) {
             return true;
         }
 
-        $this->createSocket();
-        $this->connectSocket();
-
+        $this->socket->connect();
         $this->protocol = new Protocol($this->socket);
 
         return true;
-    }
-
-    private function createSocket()
-    {
-        if (!$this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) {
-            throw new MongoConnectionException(sprintf(
-                'error creating socket: %s',
-                socket_strerror(socket_last_error())
-            ));
-        } 
-    }
-
-    private function connectSocket()
-    {
-        $ip = gethostbyname($this->host);
-        if ($ip == $this->host) {
-            throw new MongoConnectionException(sprintf(
-                'couldn\'t get host info for %s',
-                $this->host
-            ));
-        } 
-
-        $connected = socket_connect($this->socket, $ip, $this->port);
-        if (false === $connected) {
-            throw new MongoConnectionException(sprintf(
-                'unable to connect %s',
-                socket_strerror(socket_last_error())
-            ));
-        } 
     }
 
     /**
@@ -179,8 +150,8 @@ class MongoClient
      */
     public function close($connection = null)
     {
-        if (null !== $this->socket) {
-            socket_close($this->socket);
+        if ($this->socket) {
+            $this->socket->disconnect();
             $this->protocol = null;
         }
 

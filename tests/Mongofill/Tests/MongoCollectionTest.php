@@ -9,7 +9,26 @@ class MongoCollectionTest extends TestCase
 {
     public function testInsert()
     {
-        $coll = $this->getTestDB()->selectCollection('testInsert');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        
+        $data = [
+            'foo' => 'bar',
+            'boolean' => false
+        ];
+        
+        $result = $coll->insert($data);
+        $this->assertSame(1, (int) $result['ok']);
+
+        $this->assertCount(1, $coll->find());
+        $this->assertEquals($data, $coll->findOne());
+    }
+
+    /**
+     * @expectedException MongoCursorException
+     */
+    public function testInsertError()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         
         $data = [
             'foo' => 'bar',
@@ -17,14 +36,41 @@ class MongoCollectionTest extends TestCase
         ];
         
         $coll->insert($data);
+        $coll->insert($data);
+    }
 
-        $this->assertCount(1, $coll->find());
-        $this->assertEquals($data, $coll->findOne());
+    public function testInsertDuplicateW0()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        
+        $data = [
+            'foo' => 'bar',
+            'boolean' => false
+        ];
+        
+        $this->assertTrue($coll->insert($data, ['w' => 0]));
+        $this->assertTrue($coll->insert($data, ['w' => 0]));
+    }
+
+    /**
+     * @expectedException MongoCursorException
+     */
+    public function testInsertDuplicateJTrue()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        
+        $data = [
+            'foo' => 'bar',
+            'boolean' => false
+        ];
+        
+        $this->assertTrue($coll->insert($data, ['w' => 0]));
+        $coll->insert($data, ['j' => true, 'w' => 0]);
     }
 
     public function testBatchInsert()
     {
-        $coll = $this->getTestDB()->selectCollection('testInsert');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         
         $data = [
             ['foo' => 'bar'],
@@ -41,7 +87,7 @@ class MongoCollectionTest extends TestCase
 
     public function testBatchInsertWithKeys()
     {
-        $coll = $this->getTestDB()->selectCollection('testInsert');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         
         $data = [
             'foo' => ['foo' => 'bar'],
@@ -58,7 +104,7 @@ class MongoCollectionTest extends TestCase
 
     public function testInsertWithId()
     {
-        $coll = $this->getTestDB()->selectCollection('testInsert');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
 
         $data = [
             '_id' => new MongoId('000000000000000000000042'),
@@ -73,7 +119,7 @@ class MongoCollectionTest extends TestCase
 
     public function testRemove()
     {
-        $coll = $this->getTestDB()->selectCollection('testDelete');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         
         $data = [
             '_id' => new MongoId('000000000000000000000001'),
@@ -108,15 +154,24 @@ class MongoCollectionTest extends TestCase
         
         $this->assertCount(3, $coll->find());
 
-        $coll->remove(['foo' => 'qux']);
+        $result = $coll->remove(['foo' => 'qux']);
+        $this->assertSame(1, (int) $result['ok']);
+
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
         $this->assertSame('bar', current($result)['foo']);
     }
 
+    public function testRemoveW0()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $result = $coll->remove(['foo' => 'qux'], ['w' => 0]);
+        $this->assertTrue($result);
+    }
+
     public function testDrop()
     {
-        $coll = $this->getTestDB()->selectCollection('testDrop');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
 
         $data = [
             '_id' => new MongoId('000000000000000000000042'),
@@ -132,7 +187,7 @@ class MongoCollectionTest extends TestCase
 
     public function testCount()
     {
-        $coll = $this->getTestDB()->selectCollection('testCount');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $coll->drop();
         $this->assertEquals(0, $coll->count());
 
@@ -148,34 +203,79 @@ class MongoCollectionTest extends TestCase
 
     public function testGetName()
     {
-        $coll = $this->getTestDB()->selectCollection('testGetName');
-        $this->assertEquals('testGetName', $coll->getName());
-     }
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $this->assertEquals(__FUNCTION__, $coll->getName());
+    }
 
     public function testUpdate()
     {
-        $data = ['foo'=>'bar'];
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
 
-        $coll = $this->getTestDB()->selectCollection('testUpdate');
+        $data = ['foo' => 'bar'];
         $coll->insert($data);
-        $result = iterator_to_array($coll->find());
-        $this->assertCount(1, $result);
 
-        $record = current($result);
-        $this->assertEquals('bar', $record['foo']);
-        $record['foo'] = 'notbar';
-        $coll->update(['_id'=> $record['_id']], ['$set'=>['foo'=>'notbar']]);
+        $data = ['foo' => 'bar'];
+        $coll->insert($data);
+
+        $this->assertSame(2, $coll->find(['foo' => 'bar'])->count());
+
+        $result = $coll->update(['foo' =>  'bar'], [
+            '$set' => ['foo' => 'notbar']
+        ], ['multiple' => true]);
+
+        $this->assertSame(1, (int) $result['ok']);
+        $this->assertSame(2, $coll->find(['foo' => 'notbar'])->count());
+    }
+
+    public function testUpdateMulti()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+
+        $data = ['foo' => 'bar'];
+        $coll->insert($data);
+
+        $data = ['foo' => 'bar'];
+        $coll->insert($data);
+
+        $this->assertSame(2, $coll->find(['foo' => 'bar'])->count());
+
+        $coll->update(['foo' =>  'bar'], [
+            '$set' => ['foo' => 'notbar']
+        ]);
         
-        $result = iterator_to_array($coll->find(['_id'=> $record['_id']]));
-        $this->assertCount(1, $result);
-        $this->assertEquals('notbar', $record['foo']);
-     }
+        $this->assertSame(1, $coll->find(['foo' => 'bar'])->count());
+        $this->assertSame(1, $coll->find(['foo' => 'notbar'])->count());
+    }
+
+    /**
+     * @expectedException MongoCursorException
+     */
+    public function testUpdateException()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $coll->update(['foo' =>  'bar'], [
+            '$setaaa' => ['foo' => 'notbar']
+        ], ['multiple' => true]);
+    }
+
+    public function testUpdateExceptionW0()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $result = $coll->update(['foo' =>  'bar'], [
+            '$set' => ['foo' => 'notbar']
+        ], ['w' => 0]);
+        $this->assertTrue($result);
+
+        $result = $coll->update(['foo' =>  'bar'], [
+            '$setaaa' => ['foo' => 'notbar']
+        ], ['w' => 0]);
+    }
 
     public function testSave()
     {
         $data = ['foo'=>'bar'];
 
-        $coll = $this->getTestDB()->selectCollection('testUpdate');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $coll->insert($data);
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
@@ -195,12 +295,12 @@ class MongoCollectionTest extends TestCase
     {
         $data = ['foo'=>'bar'];
 
-        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $coll->insert($data);
 
         $index = ['foo' => -1, 'bar' => 1];
 
-        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $coll->deleteIndexes();
 
         $indexes = $coll->getIndexInfo();
@@ -212,12 +312,12 @@ class MongoCollectionTest extends TestCase
     {
         $data = ['foo'=>'bar'];
 
-        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $coll->insert($data);
 
         $index = ['foo' => -1, 'bar' => 1];
 
-        $coll = $this->getTestDB()->selectCollection('testIndex');
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $this->assertTrue($coll->ensureIndex($index));
         $this->assertCount(2, $coll->getIndexInfo());
 
