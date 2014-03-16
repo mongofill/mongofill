@@ -36,7 +36,16 @@ class MongoCursorTest extends TestCase
         $this->assertCount(1, $result);
         $this->assertSame(2, end($result)['foo']);
     }
-    
+
+    public function testFindWithSort()
+    {
+        $this->createNDocuments(5);
+
+        $result = iterator_to_array($this->coll->find()->sort(['foo' => -1]));
+        $this->assertCount(5, $result);
+        $this->assertSame(1, end($result)['foo']);
+    }
+
     public function testFindWithExplain()
     {
         $this->createNDocuments(5);
