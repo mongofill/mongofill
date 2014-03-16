@@ -253,7 +253,12 @@ class MongoDB
      */
     public function dropCollection($coll)
     {
-        throw new Exception('Not Implemented');
+        $collection = $this->selectCollection($coll);
+        if (!$collection) {
+            return;
+        }
+
+        return $collection->drop();
     }
 
     /**

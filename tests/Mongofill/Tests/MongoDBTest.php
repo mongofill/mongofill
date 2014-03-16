@@ -30,6 +30,17 @@ class MongoDBTest extends TestCase
         $this->assertSame('foo', $collections[0]->getName());
     }
 
+    public function testDropCollection()
+    {
+        $db = $this->getTestDB();
+        $db->createCollection('foo');
+        $db->dropCollection('foo');
+
+        $collections = $db->listCollections();
+        $this->assertCount(0, $collections);
+    }
+
+
     public function testListCollectionsWithSystem()
     {
         $data = ['foo' => 'bar'];
