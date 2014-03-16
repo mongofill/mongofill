@@ -162,6 +162,13 @@ class BsonTest extends TestCase
         $this->assertEquals($expect,  Bson::encode($input));
     }
 
+    public function testEncodeDecodeObjectEmpty()
+    {
+        $input = [(object) []];
+        $expect = "\r\000\000\000\0030\000\005\000\000\000\000\000";
+        $this->assertEquals($expect,  Bson::encode($input));
+    }
+
     public function testEncodeMinKeyMaxKey()
     {
         $input = [ 'min' => new MongoMinKey(), 'max' => new MongoMaxKey() ];

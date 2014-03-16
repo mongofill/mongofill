@@ -503,7 +503,7 @@ class MongoCollection
      *
      * @return bool -
      */
-    public function setReadPreference($readPreference, array $tags)
+    public function setReadPreference($readPreference, array $tags = null)
     {
         throw new Exception('Not Implemented');
     }

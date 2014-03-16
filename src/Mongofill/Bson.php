@@ -115,6 +115,9 @@ class Bson
                 break;
             case is_object($value):
                 $value = get_object_vars($value);
+                $bin = self::encDocument($value);
+                $sig = self::ETYPE_DOCUMENT;
+                break;
             case is_array($value):
                 $bin = self::encDocument($value);
                 $sig = self::ETYPE_ARRAY;
