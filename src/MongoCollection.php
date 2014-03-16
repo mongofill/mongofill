@@ -207,12 +207,21 @@ class MongoCollection
      */
     public function insert(&$document, array $options = [])
     {
+        $this->fillIdInDocumentIfNeeded($document);
         $documents = [&$document];
-        $this->batchInsert($documents, $options);
+        
+        $w = 1;
+        if (isset($options['w']) && $options['w'] == 0) {
+            $w = 0;
+        }
 
-        // Fake response for async insert -
-        // TODO: detect "w" option and return status array
-        return true;
+        $response = $this->protocol->opInsert($this->fqn, $documents, false, $w);
+
+        if ($w == 0) {
+            return true;
+        }
+        
+        return $response['result'][0];
     }
 
     /**
@@ -231,13 +240,7 @@ class MongoCollection
         $count = count($documents);
         $keys = array_keys($documents);
         for ($i=0; $i < $count; $i++) {
-            if (is_object($documents[$keys[$i]])) {
-                $documents[$keys[$i]] = get_object_vars($documents[$keys[$i]]);
-            }
-
-            if (!isset($documents[$keys[$i]]['_id'])) {
-                $documents[$keys[$i]]['_id'] = new MongoId();
-            }
+            $this->fillIdInDocumentIfNeeded($documents[$keys[$i]]);
         }
 
         $this->protocol->opInsert($this->fqn, $documents, false);
@@ -245,6 +248,17 @@ class MongoCollection
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
         return true;
+    }
+
+    private function fillIdInDocumentIfNeeded(&$document)
+    {
+        if (is_object($document)) {
+            $document = get_object_vars($document);
+        }
+
+        if (!isset($document['_id'])) {
+            $document['_id'] = new MongoId();
+        }
     }
 
     /**

@@ -31,23 +31,49 @@ class Protocol
         $this->socket = $socket;
     }
 
-    private function sendMessage($opCode, $opData, $responseTo = 0xffffffff)
+    protected function deliveryMessage($opCode, $opData)
     {
         $requestId = self::$lastRequestId++;
-        $bytes = strlen($opData)+16;
+        $payload = $this->packMessage($requestId, $opCode, $opData);
+
+        $this->sendMessage($payload);
+
+        return $requestId;
+    }
+
+    protected function deliveryInsertMessage($opData, $lastError)
+    {
+        $requestId = self::$lastRequestId++;
+        $payload = $this->packMessage($requestId, self::OP_INSERT, $opData, 0xffffffff);
+
+        $requestId = self::$lastRequestId++;
+        $payload .= $this->packMessage($requestId, self::OP_QUERY, $lastError, 0xffffffff);
+
+        $this->sendMessage($payload);
+
+        return $requestId;
+    }
+
+    private function sendMessage($payload)
+    {
         $bytesSent = 0;
-        $payload = pack('V4', $bytes, $requestId, $responseTo, $opCode) . $opData;
+        $bytes = strlen($payload);
+
         do {
             $result = socket_write($this->socket, $payload);
             if (false === $result) {
-                // TODO handle write errors
                 throw new \RuntimeException('unhandled socket write error');
             }
             $bytesSent += $result;
             $payload = substr($payload, $bytesSent);
         } while ($bytesSent < $bytes);
+    }
 
-        return $requestId;
+    private function packMessage($requestId, $opCode, $opData, $responseTo = 0xffffffff)
+    {
+        $bytes = strlen($opData)+16;
+    
+        return pack('V4', $bytes, $requestId, $responseTo, $opCode) . $opData;
     }
 
     private function readFromSocket($length)
@@ -68,19 +94,28 @@ class Protocol
         if (!empty($options['upsert'])) $flags |= 1;
         if (!empty($options['multiple'])) $flags |= 2;
         $data = pack('Va*Va*a*',0, "$fullCollectionName\0", $flags, Bson::encode($query), Bson::encode($update));
-        $this->sendMessage( self::OP_UPDATE, $data);
+        $this->deliveryMessage(self::OP_UPDATE, $data);
     }
 
-    public function opInsert($fullCollectionName, array $documents, $continueOnError)
+    public function opInsert($fullCollectionName, array $documents, $continueOnError, $w = 1)
     {
         $flags = 0;
         $documentBsons = "";
         if ($continueOnError) $flags |= 1;
+
         foreach ($documents as $document) {
             $documentBsons .= Bson::encode($document);
         }
+
         $data = pack('Va*a*', $flags, "$fullCollectionName\0", $documentBsons);
-        $this->sendMessage(self::OP_INSERT, $data);
+        
+        if ($w == 1) {
+            $lastError = pack('Va*VVa*', 0, "admin.\$cmd\0", 0, -1, Bson::encode(['getLastError' => 1]));
+            $requestId = $this->deliveryInsertMessage($data, $lastError);
+            return $this->opReply($requestId);
+        }
+
+        $this->deliveryMessage(self::OP_INSERT, $data);
     }
 
     public function opQuery(
@@ -91,7 +126,7 @@ class Protocol
         if ($returnFieldsSelector) {
             $data .= Bson::encode($returnFieldsSelector);
         }
-        $requestId = $this->sendMessage(self::OP_QUERY, $data);
+        $requestId = $this->deliveryMessage(self::OP_QUERY, $data);
 
         // get response
         return $this->opReply($requestId);
@@ -144,7 +179,7 @@ class Protocol
     {
         // do request
         $data = pack('Va*Va8', 0, "$fullCollectionName\0", $limit, Util::encodeInt64($cursorId));
-        $requestId = $this->sendMessage(self::OP_GET_MORE, $data);
+        $requestId = $this->deliveryMessage(self::OP_GET_MORE, $data);
 
         // get response
         return $this->opReply($requestId);
@@ -157,7 +192,7 @@ class Protocol
         // do request
         $data = pack('Va*Va*', 0, "$fullCollectionName\0", $flags,  Bson::encode($query));
 
-        $requestId = $this->sendMessage(self::OP_DELETE, $data);
+        $requestId = $this->deliveryMessage(self::OP_DELETE, $data);
     }
 }
 

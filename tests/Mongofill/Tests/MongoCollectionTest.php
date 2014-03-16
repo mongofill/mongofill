@@ -16,7 +16,8 @@ class MongoCollectionTest extends TestCase
             'boolean' => false
         ];
         
-        $coll->insert($data);
+        $r=$coll->insert($data);
+        $r = $coll->insert($data);
 
         $this->assertCount(1, $coll->find());
         $this->assertEquals($data, $coll->findOne());
