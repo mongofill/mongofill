@@ -209,19 +209,8 @@ class MongoCollection
     {
         $this->fillIdInDocumentIfNeeded($document);
         $documents = [&$document];
-        
-        $w = 1;
-        if (isset($options['w']) && $options['w'] == 0) {
-            $w = 0;
-        }
-
-        $response = $this->protocol->opInsert($this->fqn, $documents, false, $w);
-
-        if ($w == 0) {
-            return true;
-        }
-        
-        return $response['result'][0];
+    
+        return $this->protocol->opInsert($this->fqn, $documents, $options);
     }
 
     /**
@@ -243,7 +232,7 @@ class MongoCollection
             $this->fillIdInDocumentIfNeeded($documents[$keys[$i]]);
         }
 
-        $this->protocol->opInsert($this->fqn, $documents, false);
+        $this->protocol->opInsert($this->fqn, $documents, $options);
 
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
@@ -277,9 +266,7 @@ class MongoCollection
      */
     public function update(array $criteria, array $newObject, array $options = [])
     {
-        $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
-
-        //TODO: Correct return behavior
+        return $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
     }
 
     /**
@@ -304,14 +291,10 @@ class MongoCollection
         }
 
         if (isset($document['_id'])) {
-            $this->update(['_id' => $document['_id']], $document, $options);
+            return $this->update(['_id' => $document['_id']], $document, $options);
         } else {
             return $this->insert($document, $options);
         }
-
-        //TODO: Handle timeout
-        //TODO: Correct return behavior
-        return true;
     }
 
     /**
@@ -328,10 +311,7 @@ class MongoCollection
      */
     public function remove(array $criteria = [], array $options = [])
     {
-        $this->protocol->opDelete($this->fqn, $criteria, $options);
-
-        //TODO: Correct return behavior
-        return true;
+        return $this->protocol->opDelete($this->fqn, $criteria, $options);
     }
 
     /**
