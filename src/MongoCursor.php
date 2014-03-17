@@ -287,7 +287,7 @@ class MongoCursor implements Iterator
 
         $query = [
             'count' => $ns[1],
-            'query' => $this->getQuery()
+            'query' => $this->query['$query']
         ];
 
         $response = $this->protocol->opQuery($ns[0] . '.$cmd', $query, 0, -1, 0);
