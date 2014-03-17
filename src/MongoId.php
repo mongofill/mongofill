@@ -159,6 +159,10 @@ class MongoId
      */
     public static function isValid($id)
     {
+        if (!is_string($id)) {
+            return false;
+        }
+
         return preg_match('/[0-9a-fA-F]{24}/', $id);
     }
 

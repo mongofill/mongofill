@@ -38,7 +38,7 @@ class MongoIdTest extends TestCase
         ]);
 
         // disassemble to check assembled values
-        $id2 = new MongoId($id1);
+        $id2 = new MongoId((string) $id1);
 
         $this->assertEquals(1234567890, $id2->getTimestamp());
         $this->assertEquals('0897ac', substr($id2, 8, 6));
