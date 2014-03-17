@@ -2,6 +2,8 @@
 
 namespace Mongofill\Tests;
 
+use MongoCode;
+
 class MongoDBTest extends TestCase
 {
     public function testListCollections()
@@ -70,5 +72,21 @@ class MongoDBTest extends TestCase
 
         $cmd = $admin->command(['buildinfo' => true]);
         $this->assertArrayHasKey('version', $cmd);
+    }
+	
+    public function testExecute()
+    {
+        $db = $this->getTestDB();
+        
+        $func = 
+           "function(greeting, name) { ".
+               "return greeting+', '+name+', says '+greeter;".
+           "}";
+        $scope = array("greeter" => "Fred");
+
+        $code = new MongoCode($func, $scope);
+
+        $response = $db->execute($code, array("Goodbye", "Joe"));
+        $this->assertSame('Goodbye, Joe, says Fred', $response['retval']);
     }
 }
