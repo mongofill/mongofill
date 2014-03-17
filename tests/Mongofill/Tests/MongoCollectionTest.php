@@ -364,6 +364,35 @@ class MongoCollectionTest extends TestCase
         $result = MongoCollectionWrapper::toIndexString($index);
         $this->assertSame($expected, $result);
     }
+
+    public function testFindAndModify()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $coll->findAndModify(
+            ['name'=>'bar'],
+            ['$inc' => ['value' => 1]],
+            null,
+            ['new' => false, 'upsert' => true]
+        );
+
+        $result = iterator_to_array($coll->find());
+        $this->assertCount(1, $result);
+
+        $record = current($result);
+
+        $this->assertEquals('bar', $record['name']);
+        $this->assertEquals(1, $record['value']);
+
+        $record = $coll->findAndModify(
+            ['name'=>'bar'],
+            ['$inc' => ['value' => 1]],
+            null,
+            ['new' => true, 'upsert' => true]
+        );
+
+        $this->assertEquals('bar', $record['name']);
+        $this->assertEquals(2, $record['value']);
+    }
 }
 
 class MongoCollectionWrapper extends MongoCollection {
