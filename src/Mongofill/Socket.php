@@ -208,7 +208,7 @@ class Socket
     protected function readFromSocket($length)
     {
         $data = null;
-        socket_recv($this->socket, $data, $length, MSG_WAITALL);
+        @socket_recv($this->socket, $data, $length, MSG_WAITALL);
         if (null === $data) {
             $this->handleSocketReadError();
             throw new \RuntimeException('unhandled socket read error');
