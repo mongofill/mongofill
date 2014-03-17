@@ -263,8 +263,8 @@ class MongoCursor implements Iterator
             'ns' => $this->fcn,
             'limit' => $this->queryLimit,
             'skip' => $this->querySkip,
-            'query' => (object) $this->query['$query'],
-            'fields' => (object) $this->fields,
+            'query' => $this->query['$query'],
+            'fields' => $this->fields,
             'started_iterating' => $this->fetching
         ];
 

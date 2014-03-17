@@ -247,8 +247,8 @@ class MongoCursorTest extends TestCase
     {
         $info = $this->coll->find()->info();
         $this->assertSame(self::TEST_DB . '.MongoCursorTest', $info['ns']);
-        $this->assertTrue(is_object($info['query']));
-        $this->assertTrue(is_object($info['fields']));
+        $this->assertCount(0, $info['query']);
+        $this->assertCount(0, $info['fields']);
         $this->assertSame(0, $info['limit']);
         $this->assertSame(0, $info['skip']);
         $this->assertFalse($info['started_iterating']);
@@ -266,8 +266,8 @@ class MongoCursorTest extends TestCase
             ->info();
         
         $this->assertSame(self::TEST_DB . '.MongoCursorTest', $info['ns']);
-        $this->assertEquals((object) $query, $info['query']);
-        $this->assertEquals((object) $fields, $info['fields']);
+        $this->assertSame($query, $info['query']);
+        $this->assertSame($fields, $info['fields']);
         $this->assertSame(2, $info['limit']);
         $this->assertSame(1, $info['skip']);
         $this->assertFalse($info['started_iterating']);
