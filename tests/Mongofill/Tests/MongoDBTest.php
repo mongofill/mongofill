@@ -71,4 +71,18 @@ class MongoDBTest extends TestCase
         $cmd = $admin->command(['buildinfo' => true]);
         $this->assertArrayHasKey('version', $cmd);
     }
+
+    /**
+     * @expectedException MongoCursorTimeoutException
+     */
+    public function testCommandWithTimeout()
+    {
+        $admin = $this->getTestClient()->selectDB('admin');
+
+
+        $cmd = $admin->command(
+            ['$eval' => new \MongoCode('function(y) { while(i < 1000000000) { i++;} }', ['x' => 2])], 
+            ['timeout' => 1]
+        );
+    }
 }

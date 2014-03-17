@@ -106,11 +106,16 @@ class MongoDB
      */
     public function command(array $cmd, array $options = [])
     {
-        //TODO: implement options
+        $timeout = MongoCursor::$timeout;
+        if (!empty($options['timeout'])) {
+            $timeout = $options['timeout'];
+        }
+
         $response = $this->protocol->opQuery(
             "{$this->name}.\$cmd", 
             $cmd, 
-            0, -1, 0
+            0, -1, 0,
+            $timeout
         );
 
         return $response['result'][0];

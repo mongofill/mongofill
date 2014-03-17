@@ -207,10 +207,20 @@ class MongoCollection
      */
     public function insert(&$document, array $options = [])
     {
+        $timeout = MongoCursor::$timeout;
+        if (!empty($options['timeout'])) {
+            $timeout = $options['timeout'];
+        }
+
         $this->fillIdInDocumentIfNeeded($document);
         $documents = [&$document];
-    
-        return $this->protocol->opInsert($this->fqn, $documents, $options);
+
+        return $this->protocol->opInsert(
+            $this->fqn, 
+            $documents,
+            $options,
+            $timeout
+        );
     }
 
     /**
@@ -226,13 +236,18 @@ class MongoCollection
      */
     public function batchInsert(array &$documents, array $options = [])
     {
+        $timeout = MongoCursor::$timeout;
+        if (!empty($options['timeout'])) {
+            $timeout = $options['timeout'];
+        }
+
         $count = count($documents);
         $keys = array_keys($documents);
         for ($i=0; $i < $count; $i++) {
             $this->fillIdInDocumentIfNeeded($documents[$keys[$i]]);
         }
 
-        $this->protocol->opInsert($this->fqn, $documents, $options);
+        $this->protocol->opInsert($this->fqn, $documents, $options, $timeout);
 
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
@@ -266,7 +281,18 @@ class MongoCollection
      */
     public function update(array $criteria, array $newObject, array $options = [])
     {
-        return $this->protocol->opUpdate($this->fqn, $criteria, $newObject, $options);
+        $timeout = MongoCursor::$timeout;
+        if (!empty($options['timeout'])) {
+            $timeout = $options['timeout'];
+        }
+
+        return $this->protocol->opUpdate(
+            $this->fqn,
+            $criteria,
+            $newObject,
+            $options,
+            $timeout
+        );
     }
 
     /**
@@ -311,7 +337,17 @@ class MongoCollection
      */
     public function remove(array $criteria = [], array $options = [])
     {
-        return $this->protocol->opDelete($this->fqn, $criteria, $options);
+        $timeout = MongoCursor::$timeout;
+        if (!empty($options['timeout'])) {
+            $timeout = $options['timeout'];
+        }
+
+        return $this->protocol->opDelete(
+            $this->fqn,
+            $criteria,
+            $options,
+            $timeout
+        );
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Mongofill {
 
 use MongoConnectionException;
 use MongoCursorException;
+use MongoCursorTimeoutException;
 
 class Socket
 {
@@ -67,17 +68,17 @@ class Socket
         }
     }
 
-    public function putReadMessage($opCode, $opData)
+    public function putReadMessage($opCode, $opData, $timeout)
     {
         $requestId = $this->getNextLastRequestId();
         $payload = $this->packMessage($requestId, $opCode, $opData);
 
         $this->putMessage($payload);
 
-        return $this->getMessage($requestId);
+        return $this->getMessage($requestId, $timeout);
     }
 
-    public function putWriteMessage($opCode, $opData, array $options)
+    public function putWriteMessage($opCode, $opData, array $options, $timeout)
     {
         $requestId = $this->getNextLastRequestId();
         $payload = $this->packMessage($requestId, $opCode, $opData);
@@ -91,7 +92,7 @@ class Socket
         $this->putMessage($payload);
 
         if ($lastError) {
-            $response = $this->getMessage($requestId);
+            $response = $this->getMessage($requestId, $timeout);
             return $response['result'][0];
         }
 
@@ -133,7 +134,6 @@ class Socket
         return pack('Va*VVa*', 0, "admin.\$cmd\0", 0, -1, Bson::encode($command));
     }
 
-
     protected function packMessage($requestId, $opCode, $opData, $responseTo = 0xffffffff)
     {
         $bytes = strlen($opData) + Protocol::MSG_HEADER_SIZE;
@@ -157,8 +157,9 @@ class Socket
         } while ($bytesSent < $bytes);
     }
 
-    protected function getMessage($requestId)
+    protected function getMessage($requestId, $timeout)
     {
+        $this->setTimeout($timeout);    
         $header = $this->readHeaderFromSocket();
         if ($requestId != $header['responseTo']) {
             throw new \RuntimeException(sprintf(
@@ -188,7 +189,6 @@ class Socket
             $documents[] = $document;
         }
 
-
         return [
             'result'   => $documents,
             'cursorId' => Util::decodeInt64($vars['cursorId1'], $vars['cursorId2']) ?: null,
@@ -207,14 +207,37 @@ class Socket
 
     protected function readFromSocket($length)
     {
-        $data = '';
+        $data = null;
         socket_recv($this->socket, $data, $length, MSG_WAITALL);
-        if (false === $data) {
-            // TODO handle read errors
+        if (null === $data) {
+            $this->handleSocketReadError();
             throw new \RuntimeException('unhandled socket read error');
         }
 
         return $data;
+    }
+
+    protected function handleSocketReadError()
+    {
+        $errno = socket_last_error($this->socket);
+        if ($errno === 11 || $errno === 35) {
+            throw new MongoCursorTimeoutException('Timed out waiting for data');
+        }
+
+        socket_clear_error($this->socket);
+    }
+
+    protected function setTimeout($timeoutInMs)
+    {
+        $secs = $timeoutInMs / 1000;
+        $mili = $timeoutInMs % 1000;
+
+        if (defined('HHVM_VERSION')) {
+            socket_set_timeout($this->socket, (int) $secs, (int) $mili);
+        } else {
+            $timeout = ['sec' => (int) $secs, 'usec' => (int) $mili * 1000];
+            socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, $timeout);
+        }
     }
 }
 

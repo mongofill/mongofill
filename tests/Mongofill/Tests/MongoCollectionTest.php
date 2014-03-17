@@ -39,6 +39,21 @@ class MongoCollectionTest extends TestCase
         $coll->insert($data);
     }
 
+    /**
+     * @expectedException MongoCursorTimeoutException
+     */
+    public function testInsertTimeout()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        
+        $data = [
+            'foo' => 'bar',
+            'boolean' => false
+        ];
+        
+        $coll->insert($data, ['timeout' => 1]);
+    }
+
     public function testInsertDuplicateW0()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);

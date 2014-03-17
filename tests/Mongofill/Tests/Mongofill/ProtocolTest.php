@@ -21,17 +21,17 @@ class ProtocolTest extends TestCase
     public function testInsertPasses()
     {
         $conn = $this->getProtocol();
-        $conn->opInsert('mongofill.instest', [ [ 'foo' => 'bar' ] ]);
+        $conn->opInsert('mongofill.instest', [ [ 'foo' => 'bar' ] ], [], 0);
     }
 
     public function testQuery()
     {
         $conn = $this->getProtocol();
 
-        $res = $conn->opQuery('mongofill.instest', [], 0, 0, Protocol::QF_SLAVE_OK);
+        $res = $conn->opQuery('mongofill.instest', [], 0, 0, Protocol::QF_SLAVE_OK, 0);
         // var_dump($res);
         while ($res['result']) {
-            $res = $conn->opGetMore('mongofill.instest', 10, $res['cursorId']);
+            $res = $conn->opGetMore('mongofill.instest', 10, $res['cursorId'], 0);
             //var_dump($res);
         }
     }
@@ -39,7 +39,7 @@ class ProtocolTest extends TestCase
     public function testDelete()
     {
         $conn = $this->getProtocol();
-        $conn->opDelete('mongofill.instest', [], []);
+        $conn->opDelete('mongofill.instest', [], [], 0);
     }
 }
  

@@ -8,6 +8,11 @@ use Mongofill\Protocol;
 class MongoCursor implements Iterator
 {
     const DEFAULT_BATCH_SIZE = 100;
+    
+    /**
+     * @var integer
+     */
+    public static $timeout = 30000;
 
     /**
      * @var MongoClient
@@ -78,6 +83,11 @@ class MongoCursor implements Iterator
     /**
      * @var int
      */
+    private $queryTimeout = null;
+
+    /**
+     * @var int
+     */
     private $batchSize = self::DEFAULT_BATCH_SIZE;
 
     /**
@@ -97,6 +107,7 @@ class MongoCursor implements Iterator
         $this->fcn = $ns;
         $this->fields = $fields;
         $this->query['$query'] = $query;
+        $this->queryTimeout = self::$timeout;
     }
 
     /**
@@ -188,6 +199,7 @@ class MongoCursor implements Iterator
             $this->querySkip,
             $this->calculateRequestLimit(),
             0, //no flags
+            MongoCursor::$timeout,
             $this->fields
         );
 
@@ -300,7 +312,11 @@ class MongoCursor implements Iterator
             'query' => $this->query['$query']
         ];
 
-        $response = $this->protocol->opQuery($ns[0] . '.$cmd', $query, 0, -1, 0);
+        $response = $this->protocol->opQuery(
+            $ns[0] . '.$cmd', 
+            $query, 0, -1, 0,
+            $this->queryTimeout
+        );
 
         return (int) $response['result'][0]['n'];
     }
@@ -331,6 +347,7 @@ class MongoCursor implements Iterator
             $this->querySkip,
             $this->calculateRequestLimit(),
             0, //no flags
+            $this->queryTimeout,
             $this->fields
         );
 
@@ -393,7 +410,8 @@ class MongoCursor implements Iterator
         $response = $this->protocol->opGetMore(
             $this->fcn, 
             $limit, 
-            $this->cursorId
+            $this->cursorId,
+            $this->queryTimeout
         );
 
         $this->setDocuments($response);
@@ -595,7 +613,9 @@ class MongoCursor implements Iterator
      */
     public function timeout($ms)
     {
-        throw new Exception('Not Implemented');
+        $this->queryTimeout = $ms;
+
+        return $this;
     }
 
     /**

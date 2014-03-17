@@ -34,7 +34,8 @@ class Protocol
     public function opInsert(
         $fullCollectionName,
         array $documents,
-        array $options = []
+        array $options,
+        $timeout
     )
     {
         $flags = 0;
@@ -49,14 +50,15 @@ class Protocol
 
         $data = pack('Va*a*', $flags, "$fullCollectionName\0", $documentBsons);
 
-        return $this->putWriteMessage(self::OP_INSERT, $data, $options);
+        return $this->putWriteMessage(self::OP_INSERT, $data, $options, $timeout);
     }
 
     public function opUpdate(
         $fullCollectionName,
         array $query,
         array $update,
-        array $options = []
+        array $options,
+        $timeout
     )
     {
         $flags = 0;
@@ -70,13 +72,14 @@ class Protocol
 
         $data = pack('Va*Va*a*',0, "$fullCollectionName\0", $flags, Bson::encode($query), Bson::encode($update));
         
-        return $this->putWriteMessage(self::OP_UPDATE, $data, $options);
+        return $this->putWriteMessage(self::OP_UPDATE, $data, $options, $timeout);
     }
 
     public function opDelete(
         $fullCollectionName, 
         array $query,
-        array $options = []
+        array $options,
+        $timeout
     )
     {
         $flags = 0;
@@ -86,7 +89,7 @@ class Protocol
 
         $data = pack('Va*Va*', 0, "$fullCollectionName\0", $flags,  Bson::encode($query));
         
-        return $this->putWriteMessage(self::OP_DELETE, $data, $options);
+        return $this->putWriteMessage(self::OP_DELETE, $data, $options, $timeout);
     }
 
     public function opQuery(
@@ -94,7 +97,8 @@ class Protocol
         array $query, 
         $numberToSkip, 
         $numberToReturn, 
-        $flags, 
+        $flags,
+        $timeout,
         array $returnFieldsSelector = null
     )
     {
@@ -103,24 +107,24 @@ class Protocol
             $data .= Bson::encode($returnFieldsSelector);
         }
         
-        return $this->putReadMessage(self::OP_QUERY, $data);
+        return $this->putReadMessage(self::OP_QUERY, $data, $timeout);
     }
 
-    public function opGetMore($fullCollectionName, $limit, $cursorId)
+    public function opGetMore($fullCollectionName, $limit, $cursorId, $timeout)
     {
         $data = pack('Va*Va8', 0, "$fullCollectionName\0", $limit, Util::encodeInt64($cursorId));
 
-        return $this->putReadMessage(self::OP_GET_MORE, $data);
+        return $this->putReadMessage(self::OP_GET_MORE, $data, $timeout);
     }
 
-    protected function putWriteMessage($opCode, $opData, array $options)
+    protected function putWriteMessage($opCode, $opData, array $options, $timeout)
     {
-        return $this->socket->putWriteMessage($opCode, $opData, $options);
+        return $this->socket->putWriteMessage($opCode, $opData, $options, $timeout);
     }
 
-    protected function putReadMessage($opCode, $opData)
+    protected function putReadMessage($opCode, $opData, $timeout)
     {
-        return $this->socket->putReadMessage($opCode, $opData);
+        return $this->socket->putReadMessage($opCode, $opData, $timeout);
     }
 }
 
