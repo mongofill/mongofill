@@ -23,4 +23,10 @@ class MongoClientTest extends TestCase
         $m = new MongoClient('mongodb://localhost:27017', ['connect' => false]);
         $this->assertInstanceOf('Mongofill\Protocol', $m->_getProtocol());
     }
+
+    function testKillCursor()
+    {
+        $cur = $this->getTestDB()->selectCollection(__FUNCTION__)->find();
+        $cur->get
+    }
 }
