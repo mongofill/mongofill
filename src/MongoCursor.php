@@ -259,7 +259,17 @@ class MongoCursor implements Iterator
      */
     public function info()
     {
-        throw new Exception('Not Implemented');
+        $info = [
+            'ns' => $this->fcn,
+            'limit' => $this->queryLimit,
+            'skip' => $this->querySkip,
+            'query' => (object) $this->query['$query'],
+            'fields' => (object) $this->fields,
+            'started_iterating' => $this->fetching
+        ];
+
+        //TODO: missing opReplay information
+        return $info;
     }
 
     /**

@@ -6,7 +6,7 @@ class MongoCursorTest extends TestCase
 {
     public function setUp()
     {
-        $this->coll = $this->getTestDB()->selectCollection('testFindFewDocuments');
+        $this->coll = $this->getTestDB()->selectCollection('MongoCursorTest');
     }
 
     public function tearDown()
@@ -219,5 +219,45 @@ class MongoCursorTest extends TestCase
     {
         $this->createNDocuments(500);
         $this->assertSame(500, $this->coll->find()->count(true));
+    }
+
+    public function testInfo()
+    {
+        $info = $this->coll->find()->info();
+        $this->assertSame(self::TEST_DB . '.MongoCursorTest', $info['ns']);
+        $this->assertTrue(is_object($info['query']));
+        $this->assertTrue(is_object($info['fields']));
+        $this->assertSame(0, $info['limit']);
+        $this->assertSame(0, $info['skip']);
+        $this->assertFalse($info['started_iterating']);
+    }
+
+    public function testInfoFilled()
+    {
+        $query = ['foo' => 'bar'];
+        $fields = ['foo' => 1];
+
+        $info = $this->coll
+            ->find($query, $fields)
+            ->skip(1)
+            ->limit(2)
+            ->info();
+        
+        $this->assertSame(self::TEST_DB . '.MongoCursorTest', $info['ns']);
+        $this->assertEquals((object) $query, $info['query']);
+        $this->assertEquals((object) $fields, $info['fields']);
+        $this->assertSame(2, $info['limit']);
+        $this->assertSame(1, $info['skip']);
+        $this->assertFalse($info['started_iterating']);
+    }
+
+    public function testInfoInitiated()
+    {
+        $cursor = $this->coll->find();
+        $cursor->getnext();
+
+        $info = $cursor->info();
+
+        $this->assertTrue($info['started_iterating']);
     }
 }
