@@ -276,7 +276,7 @@ class MongoDB
      */
     public function execute($code, array $args = [])
     {
-        throw new Exception('Not Implemented');
+        return $this->command(array('$eval' => $code, 'args' => $args));
     }
 
     /**

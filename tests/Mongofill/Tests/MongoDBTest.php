@@ -2,6 +2,8 @@
 
 namespace Mongofill\Tests;
 
+use MongoCode;
+
 class MongoDBTest extends TestCase
 {
     public function testListCollections()
@@ -84,5 +86,21 @@ class MongoDBTest extends TestCase
             ['$eval' => new \MongoCode('function(y) { while(i < 1000000000) { i++;} }', ['x' => 2])], 
             ['timeout' => 1]
         );
+    }
+	
+    public function testExecute()
+    {
+        $db = $this->getTestDB();
+        
+        $func = 
+           "function(greeting, name) { ".
+               "return greeting+', '+name+', says '+greeter;".
+           "}";
+        $scope = array("greeter" => "Fred");
+
+        $code = new MongoCode($func, $scope);
+
+        $response = $db->execute($code, array("Goodbye", "Joe"));
+        $this->assertSame('Goodbye, Joe, says Fred', $response['retval']);
     }
 }
