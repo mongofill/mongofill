@@ -297,11 +297,7 @@ class MongoCursor implements Iterator
 
     private function countLocalData()
     {
-        while (!$this->end) {
-            $this->fetchMoreDocuments();
-        }
-
-        return count($this->documents);
+        return iterator_count($this);
     }
 
     /**
