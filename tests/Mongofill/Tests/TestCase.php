@@ -27,7 +27,7 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return MongoClient
+     * @return \MongoClient
      */
     protected  function getTestClient()
     {
@@ -38,7 +38,7 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return MongoDB
+     * @return \MongoDB
      */
     public function getTestDB()
     {
