@@ -209,6 +209,28 @@ class MongoCursorTest extends TestCase
         $this->assertSame(500, $this->coll->find()->limit(10)->skip(10)->count());
     }
 
+    public function testCountFoundOnly()
+    {
+        $this->createNDocuments(55);
+        $this->assertSame(43, $this->coll->find(['foo' => ['$gt' => 2]])->skip(10)->count(true));
+    }
+
+    public function testCountNotFoundOnly()
+    {
+        $this->createNDocuments(55);
+        $this->assertSame(53, $this->coll->find(['foo' => ['$gt' => 2]])->skip(10)->count(false));
+    }
+
+    public function testCountNotFoundOnlyWithSort()
+    {
+        $this->createNDocuments(55);
+        $this->assertSame(53, $this->coll
+            ->find(['foo' => ['$gt' => 2]])
+            ->sort(['foo' => 1])
+            ->skip(10)->count(false)
+        );
+    }
+
     public function testCountFoundOnlyUnderGetMore()
     {
         $this->createNDocuments(55);

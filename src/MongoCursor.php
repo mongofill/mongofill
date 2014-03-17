@@ -297,7 +297,7 @@ class MongoCursor implements Iterator
 
         $query = [
             'count' => $ns[1],
-            'query' => $this->getQuery()
+            'query' => $this->query['$query']
         ];
 
         $response = $this->protocol->opQuery($ns[0] . '.$cmd', $query, 0, -1, 0);
@@ -307,11 +307,7 @@ class MongoCursor implements Iterator
 
     private function countLocalData()
     {
-        while (!$this->end) {
-            $this->fetchMoreDocuments();
-        }
-
-        return count($this->documents);
+        return iterator_count($this);
     }
 
     /**

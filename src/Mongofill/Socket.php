@@ -92,11 +92,7 @@ class Socket
 
         if ($lastError) {
             $response = $this->getMessage($requestId);
-            $record = &$response['result'][0];
-
-            $this->throwExceptionIfError($record);
-
-            return $record;
+            return $response['result'][0];
         }
 
         return true;
@@ -186,8 +182,12 @@ class Socket
 
         $documents = [];
         for ($i = 0; $i < $vars['numberReturned']; $i++) {
-            $documents[] = Bson::decDocument($data, $offset);
+            $document = Bson::decDocument($data, $offset);
+            $this->throwExceptionIfError($document);
+
+            $documents[] = $document;
         }
+
 
         return [
             'result'   => $documents,
