@@ -393,6 +393,116 @@ class MongoCollectionTest extends TestCase
         $this->assertEquals('bar', $record['name']);
         $this->assertEquals(2, $record['value']);
     }
+
+    public function testAggregate()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $this->createDataForAggregateTest($coll);
+
+        $ops = [
+            ['$project' => ['author' => 1, 'tags' => 1]],
+            ['$unwind' => '$tags'],
+            ['$group' => [
+                '_id' => ['tags' => '$tags'],
+                'authors' => ['$addToSet' => '$author']
+            ]],
+        ];
+
+        $results = $coll->aggregate($ops);
+        $this->assertSame(1.0, $results['ok']);
+        $this->assertCount(2, $results['result']);
+        $this->assertSame('good', $results['result'][0]['_id']['tags']);
+        $this->assertSame('fun', $results['result'][1]['_id']['tags']);
+    }
+
+    public function testAggregateSplit()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $this->createDataForAggregateTest($coll);
+
+        $results = $coll->aggregate(
+            ['$project' => ['author' => 1, 'tags' => 1]],
+            ['$unwind' => '$tags'],
+            ['$group' => [
+                '_id' => ['tags' => '$tags'],
+                'authors' => ['$addToSet' => '$author']
+            ]]
+        );
+
+        $this->assertSame(1.0, $results['ok']);
+        $this->assertCount(2, $results['result']);
+        $this->assertSame('good', $results['result'][0]['_id']['tags']);
+        $this->assertSame('fun', $results['result'][1]['_id']['tags']);
+    }
+
+    private function createDataForAggregateTest(\MongoCollection $coll)
+    {
+        $data = [
+            'title' => 'this is my title',
+            'author' => 'bob',
+            'posted' => new \MongoDate(),
+            'pageViews' => 5,
+            'tags' => ['fun', 'good', 'fun'],
+        ];
+    
+        $coll->insert($data);
+    }
+
+    public function testDistinct()
+    {
+        $docs = [
+            ['stuff' => 'bar', 'zip-code' => 10010],
+            ['stuff' => 'foo', 'zip-code' => 99701],
+            ['stuff' => 'bar', 'zip-code' => 10010]
+        ];
+
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $coll->batchInsert($docs);
+
+        $results = $coll->distinct('zip-code');
+        $this->assertCount(2, $results);
+        $this->assertTrue(in_array(10010, $results));
+        $this->assertTrue(in_array(99701, $results));
+    }
+
+    public function testDistinctWithQuery()
+    {
+        $docs = [
+            ['stuff' => 'bar', 'zip-code' => 10010],
+            ['stuff' => 'foo', 'zip-code' => 99701],
+            ['stuff' => 'bar', 'zip-code' => 10010]
+        ];
+
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $coll->batchInsert($docs);
+
+        $results = $coll->distinct('zip-code', ['stuff' => 'foo']);
+        $this->assertCount(1, $results);
+        $this->assertTrue(in_array(99701, $results));
+    }
+
+
+    public function testGroup()
+    {
+        $docs = [
+            ['category' => 'fruit', 'name' => 'apple'],
+            ['category' => 'fruit', 'name' => 'peach'],
+            ['category' => 'fruit', 'name' => 'banana'],
+            ['category' => 'veggie', 'name' => 'corn'],
+            ['category' => 'veggie', 'name' => 'broccoli']
+        ];
+
+        $keys = ['category' => 1];
+        $initial = ['items' => []];
+        $reduce = 'function (obj, prev) { prev.items.push(obj.name); }';
+
+
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $coll->batchInsert($docs);
+        $results = $coll->group($keys, $initial, $reduce);
+        $this->assertCount(2, $results);
+    }
+
 }
 
 class MongoCollectionWrapper extends MongoCollection {

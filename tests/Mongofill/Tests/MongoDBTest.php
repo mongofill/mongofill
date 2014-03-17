@@ -21,28 +21,6 @@ class MongoDBTest extends TestCase
         $this->assertSame('testDB', $collections[0]->getName());
     }
 
-    public function testCreateCollection()
-    {
-        $db = $this->getTestDB();
-        $db->createCollection('foo');
-
-        $collections = $db->listCollections();
-        $this->assertCount(1, $collections);
-        $this->assertInstanceOf('MongoCollection', $collections[0]);
-        $this->assertSame('foo', $collections[0]->getName());
-    }
-
-    public function testDropCollection()
-    {
-        $db = $this->getTestDB();
-        $db->createCollection('foo');
-        $db->dropCollection('foo');
-
-        $collections = $db->listCollections();
-        $this->assertCount(0, $collections);
-    }
-
-
     public function testListCollectionsWithSystem()
     {
         $data = ['foo' => 'bar'];
@@ -64,6 +42,56 @@ class MongoDBTest extends TestCase
         $this->assertInstanceOf('MongoCollection', $collections[1]);
         $this->assertSame('system.indexes', $names[0]);
         $this->assertSame('testDB', $names[1]);
+    }
+
+    public function testGetCollectionNames()
+    {
+        $data = ['foo' => 'bar'];
+
+        $db = $this->getTestDB();
+
+        $coll = $db->selectCollection('testDB');
+        $coll->insert($data);
+
+        $collections = $db->getCollectionNames();
+        $this->assertCount(1, $collections);
+        $this->assertSame('testDB', $collections[0]);
+    }
+
+    public function testGetCollectionNamesWithSystem()
+    {
+        $data = ['foo' => 'bar'];
+
+        $db = $this->getTestDB();
+
+        $coll = $db->selectCollection('testDB');
+        $coll->insert($data);
+
+        $collections = $db->getCollectionNames(true);
+        $this->assertCount(2, $collections);
+        $this->assertTrue(in_array('testDB', $collections));
+        $this->assertTrue(in_array('system.indexes', $collections));
+    }
+
+    public function testCreateCollection()
+    {
+        $db = $this->getTestDB();
+        $db->createCollection('foo');
+
+        $collections = $db->listCollections();
+        $this->assertCount(1, $collections);
+        $this->assertInstanceOf('MongoCollection', $collections[0]);
+        $this->assertSame('foo', $collections[0]->getName());
+    }
+
+    public function testDropCollection()
+    {
+        $db = $this->getTestDB();
+        $db->createCollection('foo');
+        $db->dropCollection('foo');
+
+        $collections = $db->listCollections();
+        $this->assertCount(0, $collections);
     }
 
     public function testCommand()
