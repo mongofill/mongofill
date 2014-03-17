@@ -6,6 +6,7 @@ use Mongofill\Tests\TestCase;
 use Mongofill\Bson;
 use MongoInt32;
 use MongoBinData;
+use MongoDate;
 use MongoTimestamp;
 use MongoRegex;
 use MongoCode;
@@ -131,6 +132,22 @@ class BsonTest extends TestCase
         $this->assertEquals('1100000011747300c80100007b00000000', bin2hex($bson));
     }
 
+    public function testEncodeDate()
+    {
+        $timestamp = strtotime('2014-03-01 14:30:33 UTC', 123120);
+        $input = new MongoDate($timestamp);
+        $bson = bson_encode([ 'date' => $input ]);
+        $out = bson_decode($bson)['date'];
+        $this->assertEquals($input, $out);
+        $this->assertEquals('1300000009646174650028bb0d7e4401000000', bin2hex($bson));
+
+        $input = new MongoDate(-$timestamp, 123120);
+        $bson = bson_encode([ 'date' => $input ]);
+        $out = bson_decode($bson)['date'];
+        $this->assertEquals($input, $out);
+        $this->assertEquals('130000000964617465005345f281bbfeffff00', bin2hex($bson));
+    }
+
     public function testEncodeDecodeMongoRegex()
     {
         $regex  = "/foo/iu";
@@ -183,5 +200,5 @@ class BsonTest extends TestCase
         $this->assertFalse(Bson::isDocument(['foo']));
         $this->assertTrue(Bson::isDocument(['foo' => 1]));
         $this->assertTrue(Bson::isDocument(['foo', 'bar' => 1]));
-    }  
+    }
 }

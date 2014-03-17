@@ -65,7 +65,8 @@ class Bson
                     $bin = $value->regex . "\0" . $value->flags . "\0";
                     $sig  = self::ETYPE_REGEX;
                 } elseif ($value instanceof \MongoDate) {
-                    $bin = pack('V2', $value->sec, $value->usec);
+                    $ms = $value->getMs();
+                    $bin = pack('V2', $ms & 0xffffffff, ($ms >> 32));
                     $sig = self::ETYPE_DATE;
                 } elseif ($value instanceof \MongoTimestamp) {
                     $bin = pack('V2', $value->inc, $value->sec);
@@ -199,7 +200,8 @@ class Bson
                 break;
             case self::ETYPE_DATE:
                 $vars = Util::unpack('V2i', $data, $offset, 8);
-                $value = new \MongoDate($vars['i1'], $vars['i2']);
+                $ms = ($vars['i2'] << 32) + $vars['i1'];
+                $value = \MongoDate::createFromMs($ms);
                 break;
             case self::ETYPE_TIMESTAMP:
                 $vars = Util::unpack('V2i', $data, $offset, 8);
