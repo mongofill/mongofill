@@ -117,6 +117,25 @@ class Protocol
         return $this->putReadMessage(self::OP_GET_MORE, $data, $timeout);
     }
 
+    public function opKillCursors(
+        array $cursors,
+        array $options,
+        $timeout
+    )
+    {
+        $binCursors = array_reduce(
+            $cursors,
+            function($bin, $cursor) {
+                return $bin .= Util::encodeInt64($cursor);
+            },
+            ''
+        );
+
+        $data = pack('VVa*', 0, count($cursors), $binCursors);
+
+        return $this->putWriteMessage(self::OP_KILL_CURSORS, $data, $options, $timeout);
+    }
+
     protected function putWriteMessage($opCode, $opData, array $options, $timeout)
     {
         return $this->socket->putWriteMessage($opCode, $opData, $options, $timeout);

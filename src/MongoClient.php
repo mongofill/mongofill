@@ -265,7 +265,18 @@ class MongoClient
      */
     public function killCursor($serverHash, $id)
     {
-        throw new Exception('Not Implemented');
+        // since we currently support just single server connection,
+        // the $serverHash arg is ignored
+
+        if ($id instanceof MongoInt64) {
+            $id = $id->value;
+        } elseif (!is_numeric($id)) {
+            return false;
+        }
+
+        $this->protocol->opKillCursors([ (int)$id ], [], MongoCursor::$timeout);
+
+        return true;
     }
 
     /**
