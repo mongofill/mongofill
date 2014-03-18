@@ -26,7 +26,27 @@ class MongoClientTest extends TestCase
 
     function testKillCursor()
     {
-        $cur = $this->getTestDB()->selectCollection(__FUNCTION__)->find();
-        $cur->get
+        $data = [
+            [ 'A' ],
+            [ 'B' ],
+            [ 'C' ],
+            [ 'D' ],
+        ];
+        $col = $this->getTestDB()->selectCollection(__FUNCTION__);
+
+        $col->batchInsert($data);
+
+        $cur = $col->find();
+        $cur->batchSize(2);
+        $cur->limit(4);
+
+        $cur->next();
+        $cur->current();
+        $this->assertNotEquals(0, $cur->_getCursorId());
+
+        $this->getTestClient()->killCursor('foo', $cur->_getCursorId());
+
+        $cur->next();
+        $this->assertNull($cur->current());
     }
 }

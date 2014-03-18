@@ -684,4 +684,14 @@ class MongoCursor implements Iterator
         $this->currKey = 0;
         $this->end = false;
     }
+
+    /**
+     * INTERNAL: Gets the cursor id (not part of the original driver)
+     *
+     * @return int|null
+     */
+    public function _getCursorId()
+    {
+        return $this->cursorId;
+    }
 }
