@@ -603,9 +603,18 @@ class MongoCollection
      * @return array - The result of the aggregation as an array. The ok
      *   will be set to 1 on success, 0 on failure.
      */
-    public function aggregate(array $pipeline, array $op)
+    public function aggregate(array $pipeline)
     {
-        throw new Exception('Not Implemented');
+        if (func_num_args() > 1) {
+            $pipeline = func_get_args();
+        }
+
+        $cmd = [
+            'aggregate' => $this->name,
+            'pipeline' => $pipeline
+        ];
+
+        return $this->db->command($cmd);
     }
 
     /**
@@ -616,9 +625,20 @@ class MongoCollection
      *
      * @return array - Returns an array of distinct values,
      */
-    public function distinct($key, array $query)
+    public function distinct($key, array $query = [])
     {
-        throw new Exception('Not Implemented');
+        $cmd = [
+            'distinct' => $this->name,
+            'key' => $key,
+            'query' => $query
+        ];
+
+        $results = $this->db->command($cmd);
+        if (!isset($results['values'])) {
+            return [];
+        }
+
+        return $results['values'];
     }
 
     /**
@@ -642,7 +662,29 @@ class MongoCollection
         array $options = array()
     )
     {
-        throw new Exception('Not Implemented');
+        $cmd = [
+            'group' => [
+                'ns' => $this->name,
+                'key' => $keys,
+                '$reduce' => $reduce,
+                'initial' => $initial
+            ]
+        ];
+
+        if (isset($options['finalize'])) {
+            $cmd['group']['finalize'] = $options['finalize'];
+        }
+
+        if (isset($options['cond'])) {
+            $cmd['group']['cond'] = $options['condition'];
+        }
+
+        $results = $this->db->command($cmd);
+        if (!isset($results['retval'])) {
+            return [];
+        }
+
+        return $results['retval'];
     }
 
     /**

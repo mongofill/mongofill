@@ -122,17 +122,17 @@ class MongoDB
     }
 
     /**
-     * Gets an array of all MongoCollections for this database
+     * Get all collections from this database
      *
      * @param bool $includeSystemCollections -
      *
-     * @return array - Returns an array of MongoCollection objects.
+     * @return array - Returns the names of the all the collections in the
+     *   database as an array.
      */
-    public function listCollections($includeSystemCollections = false)
+    public function getCollectionNames($includeSystemCollections = false)
     {
         $collections = [];
         $namespaces = $this->selectCollection(self::NAMESPACES_COLLECTION);
-
         foreach ($namespaces->find() as $collection) {
             if (
                 !$includeSystemCollections && 
@@ -145,8 +145,24 @@ class MongoDB
                 continue;
             }
 
-            $name =  $this->getCollectionName($collection['name']);
+            $collections[] = $this->getCollectionName($collection['name']);
+        }
 
+        return $collections;
+    }
+
+    /**
+     * Gets an array of all MongoCollections for this database
+     *
+     * @param bool $includeSystemCollections -
+     *
+     * @return array - Returns an array of MongoCollection objects.
+     */
+    public function listCollections($includeSystemCollections = false)
+    {
+        $collections = [];
+        $names = $this->getCollectionNames($includeSystemCollections);
+        foreach ($names as $name) {
             $collections[] = $this->selectCollection($name);
         }
 
@@ -285,19 +301,6 @@ class MongoDB
      * @return bool - Returns the database response.
      */
     public function forceError()
-    {
-        throw new Exception('Not Implemented');
-    }
-
-    /**
-     * Get all collections from this database
-     *
-     * @param bool $includeSystemCollections -
-     *
-     * @return array - Returns the names of the all the collections in the
-     *   database as an array.
-     */
-    public function getCollectionNames($includeSystemCollections = false)
     {
         throw new Exception('Not Implemented');
     }
