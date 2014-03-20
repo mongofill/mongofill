@@ -38,18 +38,22 @@ class Socket
                 'error creating socket: %s',
                 socket_strerror(socket_last_error())
             ));
-        } 
+        }
     }
 
     protected function connectSocket()
     {
-        $ip = gethostbyname($this->host);
-        if ($ip == $this->host) {
-            throw new MongoConnectionException(sprintf(
-                'couldn\'t get host info for %s',
-                $this->host
-            ));
-        } 
+        if (filter_var($this->host, FILTER_VALIDATE_IP)) {
+            $ip = $this->host;
+        } else {
+            $ip = gethostbyname($this->host);
+            if ($ip == $this->host) {
+                throw new MongoConnectionException(sprintf(
+                    'couldn\'t get host info for %s',
+                    $this->host
+                ));
+            }
+        }
 
         $connected = socket_connect($this->socket, $ip, $this->port);
         if (false === $connected) {
@@ -57,7 +61,7 @@ class Socket
                 'unable to connect %s',
                 socket_strerror(socket_last_error())
             ));
-        } 
+        }
     }
 
     public function disconnect()
@@ -102,7 +106,7 @@ class Socket
     protected function throwExceptionIfError(array $record)
     {
         if (!empty($record['err'])) {
-            throw new MongoCursorException($record['err'], $record['code']);    
+            throw new MongoCursorException($record['err'], $record['code']);
         }
     }
 
@@ -126,7 +130,7 @@ class Socket
         if (!isset($command['wtimeout'])) {
             $command['wtimeout'] = 10000;
         }
-        
+
         if ($command['w'] === 0 && $command['j'] === false) {
             return;
         }
@@ -137,7 +141,7 @@ class Socket
     protected function packMessage($requestId, $opCode, $opData, $responseTo = 0xffffffff)
     {
         $bytes = strlen($opData) + Protocol::MSG_HEADER_SIZE;
-    
+
         return pack('V4', $bytes, $requestId, $responseTo, $opCode) . $opData;
     }
 
@@ -159,7 +163,7 @@ class Socket
 
     protected function getMessage($requestId, $timeout)
     {
-        $this->setTimeout($timeout);    
+        $this->setTimeout($timeout);
         $header = $this->readHeaderFromSocket();
         if ($requestId != $header['responseTo']) {
             throw new \RuntimeException(sprintf(

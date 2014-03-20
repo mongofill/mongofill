@@ -24,6 +24,12 @@ class MongoClientTest extends TestCase
         $this->assertInstanceOf('Mongofill\Protocol', $m->_getProtocol());
     }
 
+    function testIpv4Address()
+    {
+        $m = new MongoClient('mongodb://127.0.0.1:27017', []);
+        $this->assertInstanceOf('Mongofill\Protocol', $m->_getProtocol());
+    }
+
     function testKillCursor()
     {
         $data = [
