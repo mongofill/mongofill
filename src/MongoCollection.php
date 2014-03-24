@@ -189,7 +189,7 @@ class MongoCollection
         if (isset($result['value'])) {
             return $result['value'];
         }
-        return null;
+        return [];
     }
 
     /**
