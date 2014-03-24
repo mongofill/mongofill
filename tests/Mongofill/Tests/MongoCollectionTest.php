@@ -368,12 +368,14 @@ class MongoCollectionTest extends TestCase
     public function testFindAndModify()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        $coll->findAndModify(
+        $record = $coll->findAndModify(
             ['name'=>'bar'],
             ['$inc' => ['value' => 1]],
             null,
             ['new' => false, 'upsert' => true]
         );
+
+        $this->assertSame([], $record);
 
         $result = iterator_to_array($coll->find());
         $this->assertCount(1, $result);
