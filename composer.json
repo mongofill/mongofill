@@ -17,9 +17,6 @@
             "homepage": "https://github.com/koubas/mongofill/graphs/contributors"
         }
     ],
-    "require": {
-        "php": ">=5.4.0"
-    },
     "require-dev": {
         "athletic/athletic": "dev-master"
     },
