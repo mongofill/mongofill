@@ -1,5 +1,5 @@
 {
-    "name": "koubas/mongofill",
+    "name": "mongofill/mongofill",
     "description": "Polyfill of PECL Mongo extension",
     "minimum-stability": "stable",
     "license": "MIT",
@@ -14,7 +14,7 @@
         },
         {
             "name": "Mongofill Community",
-            "homepage": "https://github.com/koubas/mongofill/graphs/contributors"
+            "homepage": "https://github.com/mongofill/mongofill/graphs/contributors"
         }
     ],
     "require-dev": {
