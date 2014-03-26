@@ -1,4 +1,4 @@
-Mongofill [![Build Status](https://secure.travis-ci.org/koubas/mongofill.png)](http://travis-ci.org/koubas/mongofill)
+Mongofill [![Build Status](https://secure.travis-ci.org/mongofill/mongofill.png)](http://travis-ci.org/mongofill/mongofill)
 =========
 
 Pure PHP implementation of MongoDB driver, with aim to be a drop-in
