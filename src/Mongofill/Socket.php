@@ -1,6 +1,6 @@
 <?php
 
-namespace Mongofill {
+namespace Mongofill;
 
 use MongoConnectionException;
 use MongoCursorException;
@@ -135,7 +135,7 @@ class Socket
             return;
         }
 
-        return pack('Va*VVa*', 0, "admin.\$cmd\0", 0, -1, Bson::encode($command));
+        return pack('Va*VVa*', 0, "admin.\$cmd\0", 0, -1, bson_encode($command));
     }
 
     protected function packMessage($requestId, $opCode, $opData, $responseTo = 0xffffffff)
@@ -177,20 +177,14 @@ class Socket
             $header['messageLength'] - Protocol::MSG_HEADER_SIZE
         );
 
-        $offset = 0;
-        $vars = Util::unpack(
-            'Vflags/V2cursorId/VstartingFrom/VnumberReturned',
-            $data,
-            $offset,
-            20
-        );
+        $header = substr($data, 0, 20);
+        $vars = unpack('Vflags/V2cursorId/VstartingFrom/VnumberReturned', $header);
 
-        $documents = [];
-        for ($i = 0; $i < $vars['numberReturned']; $i++) {
-            $document = Bson::decDocument($data, $offset);
-            $this->throwExceptionIfError($document);
-
-            $documents[] = $document;
+        $documents = bson_decode_multiple(substr($data, 20));
+        if ($documents) {
+            $this->throwExceptionIfError($documents[0]);
+        } else {
+            $documents = [];
         }
 
         return [
@@ -243,6 +237,4 @@ class Socket
             socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, $timeout);
         }
     }
-}
-
-}
+};

@@ -1,6 +1,6 @@
 <?php
 
-namespace Mongofill {
+namespace Mongofill;
 
 class Protocol
 {
@@ -43,12 +43,12 @@ class Protocol
             $flags |= 1;
         }
 
-        $documentBsons = '';
-        foreach ($documents as $document) {
-            $documentBsons .= Bson::encode($document);
-        }
-
-        $data = pack('Va*a*', $flags, "$fullCollectionName\0", $documentBsons);
+        $data = pack(
+            'Va*a*', 
+            $flags, 
+            "$fullCollectionName\0", 
+            bson_encode_multiple($documents)
+        );
 
         return $this->putWriteMessage(self::OP_INSERT, $data, $options, $timeout);
     }
@@ -70,7 +70,13 @@ class Protocol
             $flags |= 2;
         }
 
-        $data = pack('Va*Va*a*',0, "$fullCollectionName\0", $flags, Bson::encode($query), Bson::encode($update));
+        $data = pack(
+            'Va*Va*a*',0, 
+            "$fullCollectionName\0", 
+            $flags, 
+            bson_encode($query), 
+            bson_encode($update)
+        );
         
         return $this->putWriteMessage(self::OP_UPDATE, $data, $options, $timeout);
     }
@@ -87,7 +93,13 @@ class Protocol
             $flags |= 1;
         } 
 
-        $data = pack('Va*Va*', 0, "$fullCollectionName\0", $flags,  Bson::encode($query));
+        $data = pack(
+            'Va*Va*',
+            0, 
+            "$fullCollectionName\0",
+            $flags,
+            bson_encode($query)
+        );
         
         return $this->putWriteMessage(self::OP_DELETE, $data, $options, $timeout);
     }
@@ -102,9 +114,17 @@ class Protocol
         array $returnFieldsSelector = null
     )
     {
-        $data = pack('Va*VVa*', $flags, "$fullCollectionName\0", $numberToSkip, $numberToReturn, Bson::encode($query));
+        $data = pack(
+            'Va*VVa*',
+            $flags,
+            "$fullCollectionName\0",
+            $numberToSkip,
+            $numberToReturn,
+            bson_encode($query)
+        );
+        
         if ($returnFieldsSelector) {
-            $data .= Bson::encode($returnFieldsSelector);
+            $data .= bson_encode($returnFieldsSelector);
         }
         
         return $this->putReadMessage(self::OP_QUERY, $data, $timeout);
@@ -145,6 +165,4 @@ class Protocol
     {
         return $this->socket->putReadMessage($opCode, $opData, $timeout);
     }
-}
-
 }

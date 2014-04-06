@@ -1,6 +1,6 @@
 <?php
 
-namespace Mongofill {
+namespace Mongofill;
 
 class Util
 {
@@ -42,6 +42,4 @@ class Util
 
         return $i1 | ($i2 << 32);
     }
-}
-
 }

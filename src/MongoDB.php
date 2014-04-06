@@ -74,6 +74,7 @@ class MongoDB
         if (!isset($this->collections[$name])) {
             $this->collections[$name] = new MongoCollection($this, $name);
         }
+        
         return $this->collections[$name];
     }
 

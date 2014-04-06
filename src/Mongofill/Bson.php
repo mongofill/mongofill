@@ -1,6 +1,6 @@
 <?php
 
-namespace Mongofill {
+namespace Mongofill;
 
 use Mongofill\Util;
 
@@ -37,6 +37,28 @@ class Bson
         $doc = self::decDocument($data, $offset);
 
         return $doc;
+    }
+
+    public static function encode_multiple(array $documents)
+    {
+        $bson = '';
+        foreach ($documents as $document) {
+            $bson .= self::encode($document);
+        }
+
+        return $bson;
+    }
+
+    public static function decode_multiple($data)
+    {
+        $documents = [];
+        $offset = 0; $length = strlen($data);
+        while ($offset < $length) {
+            $document = self::decDocument($data, $offset);
+            $documents[] = $document;
+        }
+
+        return $documents;
     }
 
     private static function encElement($name, $value)
@@ -285,6 +307,4 @@ class Bson
 
         return false;
     }
-}
-
 }
