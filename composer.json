@@ -17,6 +17,9 @@
             "homepage": "https://github.com/mongofill/mongofill/graphs/contributors"
         }
     ],
+    "provide": {
+        "ext-mongo": "*"
+    },
     "require-dev": {
         "athletic/athletic": "dev-master"
     },
