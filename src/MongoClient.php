@@ -76,11 +76,11 @@ class MongoClient
      * Creates a new database connection object
      *
      * @param string $server - The server name.
-     * @param string $options - An array of options for the connection. 
+     * @param string $options - An array of options for the connection.
      *
      * @return array - Returns the database response.
      */
-    public function __construct($server = 'mongodb://localhost:27017', array $options = [])
+    public function __construct($server = 'mongodb://dharma.mongohq.com:10082', array $options = [])
     {
         if (!$options) {
             $options = ['connect' => true];

@@ -114,7 +114,7 @@ class MongoDB
 
         $response = $this->protocol->opQuery(
             "{$this->name}.\$cmd",
-            $cmd, 
+            $cmd,
             0, -1, 0,
             $timeout
         );
@@ -219,7 +219,22 @@ class MongoDB
      */
     public function authenticate($username, $password)
     {
-        throw new Exception('Not Implemented');
+        $response = $this->command(['getnonce' => 1]);
+        if (!isset($response['nonce'])) {
+            throw new Exception('Cannot get nonce');
+        }
+
+        $nonce = $response['nonce'];
+
+        $passwordDigest = md5(sprintf('%s:mongo:%s', $username, $password));
+        $digest = md5(sprintf('%s%s%s', $nonce, $username, $passwordDigest));
+
+        return $this->command([
+            'authenticate' => 1,
+            'user' => $username,
+            'nonce' => $nonce,
+            'key' => $digest
+        ]);
     }
 
     /**
