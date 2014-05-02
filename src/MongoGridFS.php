@@ -105,7 +105,7 @@ class MongoGridFS extends MongoCollection
 
         $cur = $this->find($query, $fields)->limit(1);
 
-        return $cur->current();
+        return $cur->getNext();
     }
 
     /**

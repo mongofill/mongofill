@@ -188,13 +188,12 @@ class MongoCursorTest extends TestCase
 
         $result->rewind();
         $record = $result->getNext();
-        $this->assertSame(1, $record['foo']);
+        $this->assertSame(2, $record['foo']);
     }
 
     public function testHasNext()
     {
-        $this->createNDocuments(2);
-
+        $this->createNDocuments(1);
         $result = $this->coll->find();
         
         $this->assertTrue($result->hasNext());
@@ -281,5 +280,43 @@ class MongoCursorTest extends TestCase
         $info = $cursor->info();
 
         $this->assertTrue($info['started_iterating']);
+    }
+
+    public function testComplexCursorBehavior()
+    {
+        $data = ['name' => 'test'];
+
+        $collecion = $this->getTestDB()->selectCollection('MongoCursorTest');
+        $collecion->insert($data);
+        
+        $cursor = $collecion->find()->limit(1);
+
+        $this->assertSame(1, $cursor->count());
+        $this->assertNull($cursor->current());
+        $this->assertTrue($cursor->hasNext());
+        $this->assertTrue((bool) $cursor->getNext());
+        $this->assertTrue((bool) $cursor->current());
+        $this->assertFalse($cursor->hasNext());
+    }
+
+    public function testRewind()
+    {
+        $data = ['name' => 'test'];
+
+        $collecion = $this->getTestDB()->selectCollection('MongoCursorTest');
+        $collecion->insert($data);
+        
+        $cursor = $collecion->find()->limit(1);
+
+        $this->assertNull($cursor->current());
+        $this->assertTrue($cursor->hasNext());
+
+        $cursor->next();
+        $this->assertTrue((bool) $cursor->current());
+        $this->assertFalse($cursor->hasNext());
+
+        $cursor->rewind();
+        $this->assertTrue((bool) $cursor->current());
+        $this->assertFalse($cursor->hasNext());
     }
 }

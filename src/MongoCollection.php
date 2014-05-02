@@ -149,9 +149,9 @@ class MongoCollection
      */
     public function findOne($query = [], array $fields = [])
     {
-        $cur = $this->find($query, $fields)->limit(1);
+        $cursor = $this->find($query, $fields)->limit(1);
 
-        return ($cur->valid()) ? $cur->current() : null;
+        return $cursor->getNext();
     }
 
     /**

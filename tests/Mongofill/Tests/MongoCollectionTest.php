@@ -127,7 +127,6 @@ class MongoCollectionTest extends TestCase
         ];
 
         $coll->insert($data);
-
         $this->assertCount(1, $coll->find());
         $this->assertEquals($data, $coll->findOne());
     }

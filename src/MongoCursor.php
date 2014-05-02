@@ -38,7 +38,7 @@ class MongoCursor implements Iterator
     /**
      * @var int
      */
-    private $currKey = 0;
+    private $currKey = -1;
 
     /**
      * @var null|int
@@ -494,10 +494,9 @@ class MongoCursor implements Iterator
      */
     public function getNext()
     {        
-        $record = $this->current();
         $this->next();
 
-        return $record;
+        return $this->current();
     }
 
     /**
@@ -626,6 +625,8 @@ class MongoCursor implements Iterator
     public function current()
     {
         $this->doQuery();
+        $this->fetchMoreDocumentsIfNeeded();
+
         if (!isset($this->documents[$this->currKey])) {
             return null;
         }
@@ -643,6 +644,10 @@ class MongoCursor implements Iterator
         $this->doQuery();
         $this->fetchMoreDocumentsIfNeeded();
 
+        if ($this->end) {
+            return;
+        }
+
         $this->currKey++;
     }
 
@@ -654,6 +659,9 @@ class MongoCursor implements Iterator
     public function key()
     {
         $record = $this->current();
+        if (!$record) {
+            return null;
+        }
 
         if (!isset($record['_id'])) {
             return $this->currKey;
@@ -669,8 +677,6 @@ class MongoCursor implements Iterator
      */
     public function valid()
     {
-        $this->doQuery();
-
         return !$this->end;
     }
 

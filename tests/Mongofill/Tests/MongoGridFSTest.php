@@ -119,7 +119,7 @@ class MongoGridFSTest extends TestCase
         $this->assertSame((string) $id, (string) $file->file['_id']);
         $this->assertSame('bar', $file->file['foo']);
         $this->assertSame($filename, $file->file['filename']);
-        $this->assertSame(MongoGridFS::DEFAULT_CHUNK_SIZE, $file->file['chunkSize']);
+        $this->assertSame(262144, $file->file['chunkSize']);
         $this->assertInstanceOf('MongoDate', $file->file['uploadDate']);
         $this->assertSame(filesize($filename), $file->file['length']);
         $this->assertSame(md5_file($filename), $file->file['md5']);
