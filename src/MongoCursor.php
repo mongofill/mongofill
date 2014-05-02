@@ -91,6 +91,11 @@ class MongoCursor implements Iterator
     private $batchSize = self::DEFAULT_BATCH_SIZE;
 
     /**
+     * @var int
+     */
+    private $flags = 0;    
+
+    /**
      * Create a new cursor
      *
      * @param mongoclient $connection - Database connection.
@@ -198,7 +203,7 @@ class MongoCursor implements Iterator
             $query,
             $this->querySkip,
             $this->calculateRequestLimit(),
-            0, //no flags
+            $this->flags,
             MongoCursor::$timeout,
             $this->fields
         );
@@ -274,10 +279,14 @@ class MongoCursor implements Iterator
         $info = [
             'ns' => $this->fcn,
             'limit' => $this->queryLimit,
+            'batchSize' => $this->batchSize,
             'skip' => $this->querySkip,
+            'flags' => $this->flags,
             'query' => $this->query['$query'],
             'fields' => $this->fields,
-            'started_iterating' => $this->fetching
+            'started_iterating' => $this->fetching,
+            'id' => $this->cursorId,
+            'server' => (string) $this->client
         ];
 
         //TODO: missing opReplay information
@@ -346,7 +355,7 @@ class MongoCursor implements Iterator
             $this->getQuery(),
             $this->querySkip,
             $this->calculateRequestLimit(),
-            0, //no flags
+            $this->flags,
             $this->queryTimeout,
             $this->fields
         );
@@ -644,10 +653,6 @@ class MongoCursor implements Iterator
         $this->doQuery();
         $this->fetchMoreDocumentsIfNeeded();
 
-        if ($this->end) {
-            return;
-        }
-
         $this->currKey++;
     }
 
@@ -689,15 +694,5 @@ class MongoCursor implements Iterator
     {
         $this->currKey = 0;
         $this->end = false;
-    }
-
-    /**
-     * INTERNAL: Gets the cursor id (not part of the original driver)
-     *
-     * @return int|null
-     */
-    public function _getCursorId()
-    {
-        return $this->cursorId;
     }
 }

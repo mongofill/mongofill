@@ -33,32 +33,32 @@ class MongoClientTest extends TestCase
     public function testKillCursor()
     {
         $data = [
-            [ 'A' ],
-            [ 'B' ],
-            [ 'C' ],
-            [ 'D' ],
+            ['A'],
+            ['B'],
+            ['C'],
+            ['D'],
         ];
         $col = $this->getTestDB()->selectCollection(__FUNCTION__);
 
         $col->batchInsert($data);
 
-        $cur = $col->find();
-        $cur->batchSize(2);
-        $cur->limit(4);
+        $cursor = $col->find();
+        $cursor->batchSize(2);
+        $cursor->limit(4);
 
-        $cur->next();
-        $current = $cur->current();
+        $cursor->next();
+        $current = $cursor->current();
         $this->assertSame('A', $current[0]);
+        
+        $info = $cursor->info();
 
-        $this->assertNotEquals(0, $cur->_getCursorId());
+        $this->getTestClient()->killCursor($info['server'], $info['id']);
 
-        $this->getTestClient()->killCursor('foo', $cur->_getCursorId());
-
-        $cur->next();
-        $current = $cur->current();
+        $cursor->next();
+        $current = $cursor->current();
         $this->assertSame('B', $current[0]);
 
-        $cur->next();
-        $this->assertNull($cur->current());
+        $cursor->next();
+        $this->assertNull($cursor->current());
     }
 }

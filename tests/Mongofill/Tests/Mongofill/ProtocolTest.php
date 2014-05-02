@@ -29,10 +29,8 @@ class ProtocolTest extends TestCase
         $conn = $this->getProtocol();
 
         $res = $conn->opQuery('mongofill.instest', [], 0, 0, Protocol::QF_SLAVE_OK, 0);
-        // var_dump($res);
         while ($res['result']) {
             $res = $conn->opGetMore('mongofill.instest', 10, $res['cursorId'], 0);
-            //var_dump($res);
         }
     }
 
