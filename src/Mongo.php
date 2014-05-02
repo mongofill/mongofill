@@ -1,9 +1,9 @@
 <?php
 
 /**
- * A connection between PHP and MongoDB.   
- * 
- * This class extends MongoClient and provides access to several deprecated 
+ * A connection between PHP and MongoDB.
+ *
+ * This class extends MongoClient and provides access to several deprecated
  * methods.
  */
 class Mongo extends MongoClient

@@ -46,8 +46,8 @@ class MongoIdTest extends TestCase
         $this->assertEquals(5555, $id2->getInc());
     }
 
-    /** 
-     * The pid cannnot be injected so if the run process is under Int16 
+    /**
+     * The pid cannnot be injected so if the run process is under Int16
      * this tests dont have sense. In Linux the max value is 32768, but
      * on OSX is 99998
      */
@@ -59,4 +59,4 @@ class MongoIdTest extends TestCase
         $this->assertEquals($original, $build);
     }
 }
- 
+

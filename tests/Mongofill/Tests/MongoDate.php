@@ -8,7 +8,7 @@ use MongoDate;
 class MongoDateTest extends TestCase
 {
 
-    function testDateInsert()
+    public function testDateInsert()
     {
         $coll = $this->getTestDB()->selectCollection('testDateInsert');
         $coll->insert(

@@ -6,11 +6,11 @@ use MongoDBRef;
 
 class MongoDBRefTest extends TestCase
 {
-    function testDBRef()
+    public function testDBRef()
     {
         $mongo = $this->getTestClient();
         $db = $this->getTestDB();
-        
+
         $coll1 = $mongo->selectCollection(self::TEST_DB, 'dbref');
         $coll1->drop();
         $doc = ['_id' => 123, 'x' => 'foo'];
@@ -28,7 +28,7 @@ class MongoDBRefTest extends TestCase
         $this->assertEquals('bar', $result['x']);
     }
 
-    function testDBRefError()
+    public function testDBRefError()
     {
         $db = $this->getTestDB();
         $this->assertNull(MongoDBRef::get($db, null));

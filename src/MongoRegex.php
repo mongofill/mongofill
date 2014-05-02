@@ -27,7 +27,7 @@ class MongoRegex
      */
     public function __construct($regex)
     {
-        $flagsStart = strrpos($regex, $regex[0]);  
+        $flagsStart = strrpos($regex, $regex[0]);
         $this->regex = (string)substr($regex, 1, $flagsStart - 1);
         $this->flags = (string)substr($regex, $flagsStart + 1);
 
@@ -38,7 +38,7 @@ class MongoRegex
 
     public function regexIsValid($regex)
     {
-        return substr_count($regex, '/') >= 2 && 
+        return substr_count($regex, '/') >= 2 &&
           ((strlen($regex) && @preg_match($regex, null) !== false) || strlen($this->flags));
     }
 

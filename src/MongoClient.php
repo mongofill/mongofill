@@ -31,12 +31,12 @@ class MongoClient
      * @var string
      */
     public $status;
-    
+
     /**
      * @var string
      */
     public $server;
-    
+
     /**
      * @var boolean
      */

@@ -8,7 +8,7 @@ use Mongofill\Protocol;
 class MongoCursor implements Iterator
 {
     const DEFAULT_BATCH_SIZE = 100;
-    
+
     /**
      * @var integer
      */
@@ -93,7 +93,7 @@ class MongoCursor implements Iterator
     /**
      * @var int
      */
-    private $flags = 0;    
+    private $flags = 0;
 
     /**
      * Create a new cursor
@@ -125,7 +125,7 @@ class MongoCursor implements Iterator
         $this->documents = [];
         $this->currKey = 0;
         $this->cursorId = null;
-        $this->end = false; 
+        $this->end = false;
         $this->fetching = false;
         $this->hasMore = false;
     }
@@ -322,7 +322,7 @@ class MongoCursor implements Iterator
         ];
 
         $response = $this->protocol->opQuery(
-            $ns[0] . '.$cmd', 
+            $ns[0] . '.$cmd',
             $query, 0, -1, 0,
             $this->queryTimeout
         );
@@ -408,17 +408,17 @@ class MongoCursor implements Iterator
             $this->end = true;
         }
     }
-    
+
     private function fetchMoreDocuments()
     {
-        $limit = $this->calculateNextRequestLimit();    
+        $limit = $this->calculateNextRequestLimit();
         if ($this->end) {
             return;
         }
 
         $response = $this->protocol->opGetMore(
-            $this->fcn, 
-            $limit, 
+            $this->fcn,
+            $limit,
             $this->cursorId,
             $this->queryTimeout
         );
@@ -502,7 +502,7 @@ class MongoCursor implements Iterator
      * @return array - Returns the next object.
      */
     public function getNext()
-    {        
+    {
         $this->next();
 
         return $this->current();
@@ -597,7 +597,6 @@ class MongoCursor implements Iterator
     {
         throw new Exception('Not Implemented');
     }
-
 
     /**
      * Sets whether this cursor will be left open after fetching the last

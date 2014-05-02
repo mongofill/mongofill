@@ -24,7 +24,7 @@ class BsonTest extends TestCase
 
     public function testEncodeDecodeBooleanString()
     {
-        $input  = [ 'hello' => false ];        
+        $input  = [ 'hello' => false ];
         $this->assertEquals($input, Bson::decode(Bson::encode($input)));
 
         $input  = [ 'hello' => true ];
@@ -154,7 +154,7 @@ class BsonTest extends TestCase
         $input = new MongoRegex($regex);
         $bson = Bson::encode([ 'regex' => $input ]);
         $out = Bson::decode($bson)['regex'];
- 
+
         $this->assertEquals($input, $out);
     }
 
@@ -170,7 +170,7 @@ class BsonTest extends TestCase
         $input = [['foo' => 1, 'bar' => 2]];
         $expect = "'\000\000\000\0030\000\037\000\000\000\022foo\000\001\000\000\000\000\000\000\000\022bar\000\002\000\000\000\000\000\000\000\000\000";
         $this->assertEquals($expect,  Bson::encode($input));
-    } 
+    }
 
     public function testEncodeDecodeObject()
     {

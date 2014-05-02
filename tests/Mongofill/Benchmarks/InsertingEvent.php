@@ -11,7 +11,7 @@ class InsertingEvent extends AthleticEvent
     {
         $record = $this->buildSimpleDocument();
         $r = $this->getTestDB()->test->insert($record, ['w' => 1]);
-       
+
         if ($r['ok'] != 1) {
             throw new \Exception('Non ok result at simpleDocumentW0'. json_encode($r));
         }

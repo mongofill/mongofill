@@ -2,7 +2,7 @@
 
 /**
  * Represent date objects for the database. This class should be used to save
- * dates to the database and to query for dates. 
+ * dates to the database and to query for dates.
  */
 class MongoDate
 {

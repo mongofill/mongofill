@@ -2,7 +2,7 @@
 
 /**
  * An object that can be used to store or retrieve binary data from the
- * database. 
+ * database.
  */
 class MongoBinData
 {

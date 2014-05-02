@@ -6,7 +6,7 @@ if (!function_exists('bson_encode')) {
     function bson_encode($value)
     {
         return Bson::encode($value);
-    } 
+    }
 }
 
 if (!function_exists('bson_decode')) {

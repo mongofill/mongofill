@@ -87,7 +87,7 @@ abstract class AthleticEvent extends Base
             'date' => new MongoDate(),
             'regexp' => new MongoRegex('/^Nicolas/i'),
             'bin' => new MongoBinData('foo', MongoBinData::GENERIC),
-            'timestamp' => new MongoTimestamp()        
+            'timestamp' => new MongoTimestamp()
         ]);
     }
 

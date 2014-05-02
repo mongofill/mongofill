@@ -49,7 +49,7 @@ class MongoClientTest extends TestCase
         $cursor->next();
         $current = $cursor->current();
         $this->assertSame('A', $current[0]);
-        
+
         $info = $cursor->info();
 
         $this->getTestClient()->killCursor($info['server'], $info['id']);

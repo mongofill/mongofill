@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Utilities for storing and retrieving files from the database.   
+ * Utilities for storing and retrieving files from the database.
  */
 class MongoGridFS extends MongoCollection
 {
@@ -58,7 +58,7 @@ class MongoGridFS extends MongoCollection
      */
     public function delete($id)
     {
-        return $this->remove(['_id' => $id]); 
+        return $this->remove(['_id' => $id]);
     }
 
     /**
@@ -83,7 +83,7 @@ class MongoGridFS extends MongoCollection
     {
         return new MongoGridFSCursor(
             $this,
-            $this->db->_getClient(), 
+            $this->db->_getClient(),
             $this->__toString(),
             $query,
             $fields
@@ -238,12 +238,12 @@ class MongoGridFS extends MongoCollection
     {
         if (!file_exists($filename)) {
             throw new MongoException(sprintf(
-                'error setting up file: %s', 
+                'error setting up file: %s',
                 $filename
             ));
         }
     }
-    
+
     private function insertFileFromFilename($filename, array $metadata, $chunkSize)
     {
         $record = [
@@ -339,7 +339,7 @@ class MongoGridFS extends MongoCollection
         }
 
         throw new MongoGridFSException(
-            'tmp_name was not a string or an array', 
+            'tmp_name was not a string or an array',
             13
         );
     }

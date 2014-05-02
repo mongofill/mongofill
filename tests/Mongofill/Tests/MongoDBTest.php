@@ -24,9 +24,9 @@ class MongoDBTest extends TestCase
     public function testListCollectionsWithSystem()
     {
         $data = ['foo' => 'bar'];
-        
+
         $db = $this->getTestDB();
-        
+
         $coll = $db->selectCollection('testDB');
         $coll->insert($data);
 
@@ -34,8 +34,8 @@ class MongoDBTest extends TestCase
         foreach ($collections as $collection) {
             $names[] = $collection->getName();
         }
-         
-        sort($names);       
+
+        sort($names);
 
         $this->assertCount(2, $collections);
         $this->assertInstanceOf('MongoCollection', $collections[0]);
@@ -115,12 +115,12 @@ class MongoDBTest extends TestCase
             ['timeout' => 1]
         );
     }
-	
+
     public function testExecute()
     {
         $db = $this->getTestDB();
-        
-        $func = 
+
+        $func =
            "function(greeting, name) { ".
                "return greeting+', '+name+', says '+greeter;".
            "}";

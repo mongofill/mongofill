@@ -179,7 +179,7 @@ class MongoCursorTest extends TestCase
         $this->createNDocuments(10);
 
         $result = $this->coll->find();
-        
+
         $record = $result->getNext();
         $this->assertSame(1, $record['foo']);
 
@@ -195,7 +195,7 @@ class MongoCursorTest extends TestCase
     {
         $this->createNDocuments(1);
         $result = $this->coll->find();
-        
+
         $this->assertTrue($result->hasNext());
 
         $result->next();
@@ -263,7 +263,7 @@ class MongoCursorTest extends TestCase
             ->skip(1)
             ->limit(2)
             ->info();
-        
+
         $this->assertSame(self::TEST_DB . '.MongoCursorTest', $info['ns']);
         $this->assertSame($query, $info['query']);
         $this->assertSame($fields, $info['fields']);
@@ -288,7 +288,7 @@ class MongoCursorTest extends TestCase
 
         $collecion = $this->getTestDB()->selectCollection('MongoCursorTest');
         $collecion->insert($data);
-        
+
         $cursor = $collecion->find()->limit(1);
 
         $this->assertSame(1, $cursor->count());
@@ -305,7 +305,7 @@ class MongoCursorTest extends TestCase
 
         $collecion = $this->getTestDB()->selectCollection('MongoCursorTest');
         $collecion->insert($data);
-        
+
         $cursor = $collecion->find()->limit(1);
 
         $this->assertNull($cursor->current());

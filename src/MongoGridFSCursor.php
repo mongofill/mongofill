@@ -9,7 +9,7 @@ class MongoGridFSCursor extends MongoCursor
      * @var MongoClient
      */
     private $cursor;
-    
+
     /**
      * @var MongoGridFS
      */
@@ -27,15 +27,15 @@ class MongoGridFSCursor extends MongoCursor
      * @return  - Returns the new cursor.
      */
     public function __construct(
-        MongoGridFS $gridfs, 
-        MongoClient $connection, 
-        $ns, 
-        array $query, 
+        MongoGridFS $gridfs,
+        MongoClient $connection,
+        $ns,
+        array $query,
         array $fields
     )
     {
         $this->gridfs = $gridfs;
-        
+
         parent::__construct($connection, $ns, $query, $fields);
     }
 

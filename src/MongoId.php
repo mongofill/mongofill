@@ -67,7 +67,7 @@ class MongoId
         if (null === self::$refInc) {
            self::$refInc = (int) mt_rand(0, pow(2, 24));
         }
-        
+
         $this->timestamp = time();
         $this->inc = self::$refInc++;
         $this->pid = getmypid();
@@ -92,7 +92,7 @@ class MongoId
             $this->pid,
             $i3, $i2, $i1
         );
-     
+
         return bin2hex($binId);
     }
 

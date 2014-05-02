@@ -185,7 +185,7 @@ class MongoCollection
 
         $command = array_merge($command, $options);
         $result = $this->db->command($command);
-        
+
         if (isset($result['value'])) {
             return $result['value'];
         }
@@ -236,7 +236,7 @@ class MongoCollection
         $documents = [&$document];
 
         return $this->protocol->opInsert(
-            $this->fqn, 
+            $this->fqn,
             $documents,
             $options,
             $timeout

@@ -12,9 +12,9 @@ class ProtocolTest extends TestCase
     {
         $socket = new Socket('localhost', 27017);
         $socket->connect();
-        
+
         $proto = new Protocol($socket);
-        
+
         return $proto;
     }
 
@@ -40,4 +40,3 @@ class ProtocolTest extends TestCase
         $conn->opDelete('mongofill.instest', [], [], 0);
     }
 }
- 

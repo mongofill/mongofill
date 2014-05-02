@@ -21,4 +21,3 @@ class MongoRegexTest extends TestCase
         new MongoRegex('0123456789abcdef01234567');
     }
 }
- 

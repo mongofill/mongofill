@@ -44,9 +44,9 @@ class Protocol
         }
 
         $data = pack(
-            'Va*a*', 
-            $flags, 
-            "$fullCollectionName\0", 
+            'Va*a*',
+            $flags,
+            "$fullCollectionName\0",
             bson_encode_multiple($documents)
         );
 
@@ -64,25 +64,25 @@ class Protocol
         $flags = 0;
         if (!empty($options['upsert'])) {
             $flags |= 1;
-        } 
-        
+        }
+
         if (!empty($options['multiple'])) {
             $flags |= 2;
         }
 
         $data = pack(
-            'Va*Va*a*',0, 
-            "$fullCollectionName\0", 
-            $flags, 
-            bson_encode($query), 
+            'Va*Va*a*',0,
+            "$fullCollectionName\0",
+            $flags,
+            bson_encode($query),
             bson_encode($update)
         );
-        
+
         return $this->putWriteMessage(self::OP_UPDATE, $data, $options, $timeout);
     }
 
     public function opDelete(
-        $fullCollectionName, 
+        $fullCollectionName,
         array $query,
         array $options,
         $timeout
@@ -91,24 +91,24 @@ class Protocol
         $flags = 0;
         if (!empty($options['justOne'])) {
             $flags |= 1;
-        } 
+        }
 
         $data = pack(
             'Va*Va*',
-            0, 
+            0,
             "$fullCollectionName\0",
             $flags,
             bson_encode($query)
         );
-        
+
         return $this->putWriteMessage(self::OP_DELETE, $data, $options, $timeout);
     }
 
     public function opQuery(
-        $fullCollectionName, 
-        array $query, 
-        $numberToSkip, 
-        $numberToReturn, 
+        $fullCollectionName,
+        array $query,
+        $numberToSkip,
+        $numberToReturn,
         $flags,
         $timeout,
         array $returnFieldsSelector = null
@@ -122,11 +122,11 @@ class Protocol
             $numberToReturn,
             bson_encode($query)
         );
-        
+
         if ($returnFieldsSelector) {
             $data .= bson_encode($returnFieldsSelector);
         }
-        
+
         return $this->putReadMessage(self::OP_QUERY, $data, $timeout);
     }
 

@@ -131,7 +131,7 @@ class MongoGridFSTest extends TestCase
     }
 
     public function testStoreUpload()
-    {   
+    {
         $_FILES['test']['name'] = '/tmp/foo.bar.txt';
         $_FILES['test']['tmp_name'] = __DIR__ . self::EXAMPLE_BIN_FILE;
 

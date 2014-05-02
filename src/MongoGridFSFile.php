@@ -9,7 +9,7 @@ class MongoGridFSFile
      * @var array
      */
     public $file;
-    
+
     /**
      * @var MongoGridFS
      */
@@ -75,7 +75,6 @@ class MongoGridFSFile
     {
         if (!isset($this->file['length'])) {
             throw new MongoException('couldn\'t find file size', 14);
-            
         }
     }
 
@@ -106,7 +105,7 @@ class MongoGridFSFile
         }
 
         $bytes = $this->getBytes();
-        
+
         return file_put_contents($filename, $bytes);
     }
 

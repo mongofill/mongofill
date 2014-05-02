@@ -10,12 +10,12 @@ class MongoCollectionTest extends TestCase
     public function testInsert()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             'foo' => 'bar',
             'boolean' => false
         ];
-        
+
         $result = $coll->insert($data);
         $this->assertSame(1, (int) $result['ok']);
 
@@ -29,12 +29,12 @@ class MongoCollectionTest extends TestCase
     public function testInsertError()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             'foo' => 'bar',
             'boolean' => false
         ];
-        
+
         $coll->insert($data);
         $coll->insert($data);
     }
@@ -45,24 +45,24 @@ class MongoCollectionTest extends TestCase
     public function testInsertTimeout()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             'foo' => 'bar',
             'boolean' => false
         ];
-        
+
         $coll->insert($data, ['timeout' => 1]);
     }
 
     public function testInsertDuplicateW0()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             'foo' => 'bar',
             'boolean' => false
         ];
-        
+
         $this->assertTrue($coll->insert($data, ['w' => 0]));
         $this->assertTrue($coll->insert($data, ['w' => 0]));
     }
@@ -73,12 +73,12 @@ class MongoCollectionTest extends TestCase
     public function testInsertDuplicateJTrue()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             'foo' => 'bar',
             'boolean' => false
         ];
-        
+
         $this->assertTrue($coll->insert($data, ['w' => 0]));
         $coll->insert($data, ['j' => true, 'w' => 0]);
     }
@@ -86,7 +86,7 @@ class MongoCollectionTest extends TestCase
     public function testBatchInsert()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             ['foo' => 'bar'],
             ['foo' => 'qux']
@@ -103,7 +103,7 @@ class MongoCollectionTest extends TestCase
     public function testBatchInsertWithKeys()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             'foo' => ['foo' => 'bar'],
             'bar' => ['foo' => 'qux']
@@ -134,7 +134,7 @@ class MongoCollectionTest extends TestCase
     public function testRemove()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
-        
+
         $data = [
             '_id' => new MongoId('000000000000000000000001'),
             'foo' => 'bar'
@@ -165,7 +165,7 @@ class MongoCollectionTest extends TestCase
             'foo' => 'qux'
         ];
         $coll->insert($data);
-        
+
         $this->assertCount(3, $coll->find());
 
         $result = $coll->remove(['foo' => 'qux']);
@@ -256,7 +256,7 @@ class MongoCollectionTest extends TestCase
         $coll->update(['foo' =>  'bar'], [
             '$set' => ['foo' => 'notbar']
         ]);
-        
+
         $this->assertSame(1, $coll->find(['foo' => 'bar'])->count());
         $this->assertSame(1, $coll->find(['foo' => 'notbar'])->count());
     }
@@ -343,7 +343,7 @@ class MongoCollectionTest extends TestCase
     {
         $expected = 'foo_-1_bar_1';
         $index = ['foo' => -1, 'bar' => 1];
-        
+
         $result = MongoCollectionWrapper::toIndexString($index);
         $this->assertSame($expected, $result);
     }
@@ -359,7 +359,7 @@ class MongoCollectionTest extends TestCase
                 'baz' => 10
             ]
         ];
-        
+
         $result = MongoCollectionWrapper::toIndexString($index);
         $this->assertSame($expected, $result);
     }
@@ -445,7 +445,7 @@ class MongoCollectionTest extends TestCase
             'pageViews' => 5,
             'tags' => ['fun', 'good', 'fun'],
         ];
-    
+
         $coll->insert($data);
     }
 

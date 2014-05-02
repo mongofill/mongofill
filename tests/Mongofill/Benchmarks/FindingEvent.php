@@ -17,7 +17,7 @@ class FindingEvent extends AthleticEvent
         $complexRecord = $this->buildComplexDocument();
         $complexNestedRecord = $this->buildComplexNestedDocument();
 
-        for ($i=0; $i < $this->recordCount; $i++) { 
+        for ($i=0; $i < $this->recordCount; $i++) {
             $this->getTestDB()->simple->insert($simpleRecord);
             $this->getTestDB()->simpleNested->insert($simpleNestedRecord);
             $this->getTestDB()->complex->insert($complexRecord);

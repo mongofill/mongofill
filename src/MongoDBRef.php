@@ -2,7 +2,7 @@
 
 /**
  * This class can be used to create lightweight links between objects in
- * different collections. 
+ * different collections.
  */
 class MongoDBRef {
 

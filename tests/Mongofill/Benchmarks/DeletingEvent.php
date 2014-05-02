@@ -17,7 +17,7 @@ class DeletingEvent extends AthleticEvent
 
         $this->getTestDB()->test->insert($record);
     }
-    
+
     /**
      * @iterations 1000
      */

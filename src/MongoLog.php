@@ -56,7 +56,7 @@ class MongoLog
      */
     public static function getLevel()
     {
-        return self::$level; 
+        return self::$level;
     }
 
     /**

@@ -20,4 +20,4 @@ class MongoException extends Exception
     const NON_UTF_STRING = 12;
     const MUTEX_ERROR = 13;
     const INDEX_TOO_LONG = 14;
-} 
+}
