@@ -131,4 +131,11 @@ class MongoDBTest extends TestCase
         $response = $db->execute($code, array("Goodbye", "Joe"));
         $this->assertSame('Goodbye, Joe, says Fred', $response['retval']);
     }
+
+    public function testAuthenticate()
+    {
+        $db = $this->getTestDB();
+        $response = $db->authenticate('foo', 'bar');
+        $this->assertSame(18, $response['code']);
+    }
 }

@@ -80,7 +80,7 @@ class MongoClient
      *
      * @return array - Returns the database response.
      */
-    public function __construct($server = 'mongodb://dharma.mongohq.com:10082', array $options = [])
+    public function __construct($server = 'mongodb://localhost:27017', array $options = [])
     {
         if (!$options) {
             $options = ['connect' => true];
