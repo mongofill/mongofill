@@ -681,6 +681,16 @@ class MongoCursor implements Iterator
      */
     public function valid()
     {
+        // Issue #48 - special case where result set is count 0
+	if (!$this->end && $this->currKey === 0) {
+            $this->doQuery();
+            $this->fetchMoreDocumentsIfNeeded();
+
+            if (!isset($this->documents[$this->currKey])) {
+               return false;
+            }
+        }
+
         return !$this->end;
     }
 
