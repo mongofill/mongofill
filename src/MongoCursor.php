@@ -681,6 +681,8 @@ class MongoCursor implements Iterator
      */
     public function valid()
     {
+        $this->doQuery();
+
         return !$this->end;
     }
 

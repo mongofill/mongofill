@@ -319,4 +319,19 @@ class MongoCursorTest extends TestCase
         $this->assertTrue((bool) $cursor->current());
         $this->assertFalse($cursor->hasNext());
     }
+
+    public function testEmptyResult()
+    {
+
+        $collecion = $this->getTestDB()->selectCollection('MongoCursorTest');
+
+        $cursor = $collecion->find()->limit(1);
+
+foreach ($cursor as $key => $value) {
+    var_dump($value);
+}
+
+        $this->assertNull($cursor->current());
+        $this->assertFalse($cursor->hasNext());
+    }
 }
