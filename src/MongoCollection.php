@@ -337,6 +337,8 @@ class MongoCollection
         }
 
         if (isset($document['_id'])) {
+            $options['upsert'] = true;
+
             return $this->update(['_id' => $document['_id']], $document, $options);
         } else {
             return $this->insert($document, $options);

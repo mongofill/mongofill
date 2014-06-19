@@ -305,6 +305,18 @@ class MongoCollectionTest extends TestCase
         $this->assertEquals('notbar', $record['foo']);
     }
 
+    public function testSaveUpdateWithId()
+    {
+        $data = ['_id' => new MongoId(), 'foo' => 'bar'];
+
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $coll->save($data);
+
+        $result = iterator_to_array($coll->find(['_id'=> $data['_id']]));
+        $this->assertCount(1, $result);
+        $this->assertEquals('bar', $data['foo']);
+    }
+
     public function testEnsureIndex()
     {
         $data = ['foo'=>'bar'];
