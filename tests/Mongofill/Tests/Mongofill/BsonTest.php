@@ -31,6 +31,12 @@ class BsonTest extends TestCase
         $this->assertEquals($input, Bson::decode(Bson::encode($input)));
     }
 
+    public function testEncodeDecodeInt32()
+    {
+        $input  = [ 'hello' => new MongoInt32(-1) ];
+        $this->assertEquals(['hello' => -1], Bson::decode(Bson::encode($input)));
+    }
+
     public function testEncodeMoreComplexMixed()
     {
         $input  = [

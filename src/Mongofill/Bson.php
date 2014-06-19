@@ -184,7 +184,7 @@ class Bson
                 $value = self::decDocument($data, $offset);
                 break;
             case self::ETYPE_INT32:
-                $value = Util::unpack('Vint', $data, $offset, 4)['int'];
+                $value = Util::unpack('lint', $data, $offset, 4)['int'];
                 break;
             case self::ETYPE_BOOL:
                 $value = Util::unpack('C', $data, $offset, 1);
