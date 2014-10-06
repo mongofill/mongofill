@@ -156,6 +156,11 @@ class Protocol
         return $this->putWriteMessage(self::OP_KILL_CURSORS, $data, $options, $timeout);
     }
 
+	public function getServerHash()
+	{
+		return $this->socket->getServerHash();
+	}
+
     protected function putWriteMessage($opCode, $opData, array $options, $timeout)
     {
         return $this->socket->putWriteMessage($opCode, $opData, $options, $timeout);

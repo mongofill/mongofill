@@ -1,11 +1,22 @@
 <?php
 
-use Mongofill\Protocol;
-
 class MongoDB
 {
+    const PROFILING_OFF = 0;
+    const PROFILING_SLOW = 1;
+    const PROFILING_ON = 2;
     const NAMESPACES_COLLECTION = 'system.namespaces';
     const INDEX_COLLECTION = 'system.indexes';
+
+    /**
+     * @var int
+     */
+    public $w = 1;
+
+    /**
+     * @var int
+     */
+    public $w_timeout = 10000;
 
     /**
      * @var string
@@ -18,28 +29,26 @@ class MongoDB
     private $client;
 
     /**
-     * @var Protocol
-     */
-    private $protocol;
-
-    /**
      * @var array
      */
     private $collections = [];
 
     /**
+     * @var array
+     */
+    private $readPreference;
+
+    /**
      * Creates a new database
      *
-     * @param mongoclient $conn - Database connection.
+     * @param MongoClient $client - Database connection.
      * @param string $name - Database name.
-     *
-     * @return  - Returns the database.
      */
     public function __construct(MongoClient $client, $name)
     {
         $this->name = $name;
         $this->client = $client;
-        $this->protocol = $client->_getProtocol();
+        $this->readPreference = $client->getReadPreference();
     }
 
     /**
@@ -112,7 +121,7 @@ class MongoDB
             $timeout = $options['timeout'];
         }
 
-        $response = $this->protocol->opQuery(
+        $response = $this->client->_getWriteProtocol()->opQuery(
             "{$this->name}.\$cmd",
             $cmd,
             0, -1, 0,
@@ -346,11 +355,11 @@ class MongoDB
     /**
      * Get the read preference for this database
      *
-     * @return array -
+     * @return array
      */
     public function getReadPreference()
     {
-        throw new Exception('Not Implemented');
+        return $this->readPreference;
     }
 
     /**
@@ -431,7 +440,10 @@ class MongoDB
      */
     public function setReadPreference($readPreference, array $tags = null)
     {
-        throw new Exception('Not Implemented');
+        if ($newPreference = MongoClient::_validateReadPreference($readPreference, $tags)) {
+            $this->readPreference = $newPreference;
+        }
+        return (bool)$newPreference;
     }
 
     /**

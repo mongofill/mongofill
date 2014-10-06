@@ -58,7 +58,7 @@ class Socket
         $connected = socket_connect($this->socket, $ip, $this->port);
         if (false === $connected) {
             throw new MongoConnectionException(sprintf(
-                'unable to connect %s',
+                "unable to connect to $ip:$this->port because: %s",
                 socket_strerror(socket_last_error())
             ));
         }
@@ -101,6 +101,11 @@ class Socket
         }
 
         return true;
+    }
+
+    public function getServerHash()
+    {
+        return "$this->host:$this->port";
     }
 
     protected function throwExceptionIfError(array $record)

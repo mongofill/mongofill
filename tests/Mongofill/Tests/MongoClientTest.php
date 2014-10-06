@@ -15,19 +15,19 @@ class MongoClientTest extends TestCase
     public function testServerOptionsDefault()
     {
         $m = new MongoClient('mongodb://localhost:27017', []);
-        $this->assertInstanceOf('Mongofill\Protocol', $m->_getProtocol());
+        $this->assertInstanceOf('Mongofill\Protocol', $m->_getWriteProtocol());
     }
 
     public function testGetProtocolAutoConnect()
     {
         $m = new MongoClient('mongodb://localhost:27017', ['connect' => false]);
-        $this->assertInstanceOf('Mongofill\Protocol', $m->_getProtocol());
+        $this->assertInstanceOf('Mongofill\Protocol', $m->_getWriteProtocol());
     }
 
     public function testIpv4Address()
     {
         $m = new MongoClient('mongodb://127.0.0.1:27017', []);
-        $this->assertInstanceOf('Mongofill\Protocol', $m->_getProtocol());
+        $this->assertInstanceOf('Mongofill\Protocol', $m->_getWriteProtocol());
     }
 
     public function testKillCursor()

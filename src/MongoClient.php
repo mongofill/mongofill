@@ -16,6 +16,7 @@ class MongoClient
     const RP_SECONDARY = 'secondary';
     const RP_SECONDARY_PREFERRED = 'secondaryPreferred';
     const RP_NEAREST   = 'nearest';
+    const RP_DEFAULT_ACCEPTABLE_LATENCY_MS = 15;
 
     /**
      * @var boolean
@@ -33,11 +34,6 @@ class MongoClient
     public $status;
 
     /**
-     * @var string
-     */
-    public $server;
-
-    /**
      * @var boolean
      */
     public $persistent;
@@ -48,24 +44,19 @@ class MongoClient
     private $options;
 
     /**
-     * @var string
+     * @var array<string>
      */
-    private $host = self::DEFAULT_HOST;
+    private $hosts = [];
 
     /**
-     * @var int
+     * @var array<Protocol>
      */
-    private $port = self::DEFAULT_PORT;
+    public $protocols = [];
 
     /**
-     * @var Protocol
+     * @var array<Socket>
      */
-    private $protocol;
-
-    /**
-     * @var resource
-     */
-    private $socket;
+    private $sockets = [];
 
     /**
      * @var array
@@ -73,35 +64,61 @@ class MongoClient
     private $databases = [];
 
     /**
+     * @var string
+     */
+    private $replSet;
+
+    /**
+     * @var array
+     */
+    private $replSetStatus = [];
+
+    /**
+     * @var array
+     */
+    private $replSetConf = [];
+
+    /**
+     * @var array
+     */
+    private $readPreference = ['type' => self::RP_PRIMARY];
+
+    /**
      * Creates a new database connection object
      *
      * @param string $server - The server name.
-     * @param string $options - An array of options for the connection.
-     *
-     * @return array - Returns the database response.
+     * @param array $options - An array of options for the connection.
      */
-    public function __construct($server = 'mongodb://localhost:27017', array $options = [])
+    public function __construct($server = 'mongodb://localhost:27017', array $options = ['connect' => true])
     {
-        if (!$options) {
-            $options = ['connect' => true];
+        $pos = strpos($server, 'mongodb://');
+        if ($pos !== false) {
+            $server = substr($server, $pos + 10);
         }
+        list($server, $option_str) = explode('/?', $server);
 
-        $this->options = $options;
-        if (preg_match('/mongodb:\/\/([0-9a-zA-Z_.-]+)(:(\d+))?/', $server, $matches)) {
-            $this->host = $matches[1];
-            if (isset($matches[3])) {
-                $this->port = $matches[3];
+        $this->options = [];
+        foreach (explode('&', $option_str) as $key_value_pair) {
+            list($key, $value) = explode('=', $key_value_pair);
+            if ($key) {
+                $this->options[$key] = $value;
             }
-        } else {
-            $this->host = $server;
+        }
+        $this->options = array_merge($this->options, $options);
+        if ($this->options['replSet']) {
+            $this->replSet = $this->options['replSet'];
+        }
+        if ($this->options['readPreference']) {
+            $this->setReadPreference($this->options['readPreference'], $this->options['readPreferenceTags']);
         }
 
-        if (isset($options['port'])) {
-            $this->port = $options['port'];
+        foreach (explode(',', $server) as $host_str) {
+            list($host, $port) = explode(':', $host_str);
+            if (preg_match('/\A[a-zA-Z0-9_.\-]+\z/', $host)) {
+                $port = preg_match('/\A[0-9]+\z/', $port) ? $port : self::DEFAULT_PORT;
+                $this->hosts["$host:$port"] = ['host' => $host, 'port' => $port];
+            }
         }
-
-        $this->socket = new Socket($this->host, $this->port);
-        $this->server = "mongodb://{$this->host}:{$this->port}";
 
         if (isset($options['connect']) && $options['connect']) {
             $this->connect();
@@ -121,20 +138,103 @@ class MongoClient
     }
 
     /**
-     * Connects to a database server
+     * Connects to a database server or replica set
      *
      * @return bool - If the connection was successful.
+     * @throws MongoConnectionException
      */
     public function connect()
     {
-        if ($this->protocol) {
+        if ($this->protocols) {
             return true;
         }
 
-        $this->socket->connect();
-        $this->protocol = new Protocol($this->socket);
+        $latestError = null;
+        foreach ($this->hosts as $host_key => $host_info) {
+            try {
+                $this->connectToHost($host_info['host'], $host_info['port']);
+            } catch (MongoConnectionException $e) {
+                // We can tolerate connection failures as long as at least 1 succeeds
+                $latestError = $e;
+                continue;
+            }
 
+            // We were able to connect, so update host status
+            $this->hosts[$host_key]['health'] = 1; // assume healthy since we connected
+            $this->hosts[$host_key]['state'] = 0; // Default to unknown
+
+            // Use one request to get both replica set config and status
+            $cmd = [
+                '$eval' => 'return {conf: rs.conf(), status: db.runCommand({replSetGetStatus: 1})};',
+                'nolock' => true
+            ];
+            // We must use a raw opQuery here because MongoDB::command cannot be used
+            // until the replica set info has been initialized
+            $result = reset($this->protocols)->opQuery(
+                'admin.$cmd',
+                $cmd,
+                0, -1, 0,
+                MongoCursor::$timeout
+            )['result'][0];
+            // This will fail to get info if server is not using a replica set, but that's fine
+            if ($result['ok'] != 1 || !$result['retval']['conf'] || !$result['retval']['status']) {
+                // If we're trying to use a replica set, this is fatal
+                if ($this->replSet) {
+                    $msg = "Unable to get replica set config & status for host $host_key";
+                    throw new MongoConnectionException($msg);
+                }
+            } else {
+                $this->replSetConf = $result['retval']['conf'];
+                $this->replSetStatus = $result['retval']['status'];
+                foreach ($this->replSetStatus['members'] as $member) {
+                    if ($member['stateStr'] === 'ARBITER') {
+                        continue;
+                    }
+                    // If this member is the one we are already connected to, save the status
+                    // information under the original host:port combo, which might be different
+                    // than what is listed in the replica set config
+                    if (isset($member['self']) && $member['self'] === true) {
+                        $this->hosts[$host_key]['health'] = $member['health'];
+                        $this->hosts[$host_key]['state'] = $member['state'];
+                    }
+                    list($host, $port) = explode(':', $member['name']);
+                    $this->hosts[$member['name']] = [
+                        'host' => $host,
+                        'port' => $port,
+                        'health' => $member['health'],
+                        'state' => $member['state'],
+                    ];
+                }
+            }
+
+            break;
+        }
+
+        if (!$this->protocols) {
+            $msg = "Could not connect to any of " . count($this->hosts) .
+                " hosts. Latest error: " . ($latestError ? $latestError->getMessage() : '');
+            throw new MongoConnectionException($msg);
+        }
+
+        $this->connected = true;
         return true;
+    }
+
+    /**
+     * Establish a connection to specified host if not already connected to it
+     * @param $host
+     * @param $port
+     */
+    private function connectToHost($host, $port)
+    {
+        $host_key = "$host:$port";
+        if (!isset($this->protocols[$host_key])) {
+            if (!isset($this->sockets[$host_key])) {
+                $this->sockets[$host_key] = new Socket($host, $port);
+                $this->sockets[$host_key]->connect();
+            }
+            $this->protocols[$host_key] = new Protocol($this->sockets[$host_key]);
+        }
     }
 
     /**
@@ -150,24 +250,130 @@ class MongoClient
      */
     public function close($connection = null)
     {
-        if ($this->socket) {
-            $this->socket->disconnect();
-            $this->protocol = null;
+        foreach ($this->sockets as $socket) {
+            $socket->disconnect();
         }
+        $this->protocols = [];
 
         //TODO: implement $connection handling
     }
 
-    /**
-     * @return Protocol
-     */
-    public function _getProtocol()
+    public function _getWriteProtocol()
     {
-        if (!$this->connected) {
-            $this->connect();
+        $this->connect();
+        if (!$this->replSet) {
+            return reset($this->protocols);
+        }
+        foreach ($this->replSetStatus['members'] as $member) {
+            if ($member['stateStr'] === 'PRIMARY') {
+                $host_key = $member['name'];
+                list($host, $port) = explode(':', $host_key);
+                $this->connectToHost($host, $port);
+                return $this->protocols[$host_key];
+            }
+        }
+        throw new MongoConnectionException("No PRIMARY found in replica set");
+    }
+
+    public function _getReadProtocol(array $readPreference)
+    {
+        $this->connect();
+        if (!$this->replSet) {
+            return reset($this->protocols);
         }
 
-        return $this->protocol;
+        // Statically cache which protocol is chosen for a given read preference (request association)
+        $cache_key = json_encode($readPreference);
+        static $cache = [];
+        if (isset($cache[$cache_key])) {
+            return $cache[$cache_key];
+        }
+
+        switch ($readPreference['type']) {
+            case self::RP_PRIMARY:
+                return $cache[$cache_key] = $this->_getWriteProtocol();
+
+            case self::RP_PRIMARY_PREFERRED:
+                try {
+                    return $cache[$cache_key] = $this->_getWriteProtocol();
+                } catch (MongoConnectionException $e) {
+                    // Fall through to reading from secondary
+                }
+
+            case self::RP_SECONDARY:
+                return $cache[$cache_key] = $this->getNearestHostProtocol(['SECONDARY'], $readPreference);
+
+            case self::RP_SECONDARY_PREFERRED:
+                try {
+                    return $cache[$cache_key] = $this->getNearestHostProtocol(['SECONDARY'], $readPreference);
+                } catch (MongoConnectionException $e) {
+                    return $cache[$cache_key] = $this->_getWriteProtocol();
+                }
+
+            case self::RP_NEAREST:
+                return $cache[$cache_key] = $this->getNearestHostProtocol(['PRIMARY', 'SECONDARY'], $readPreference);
+
+            default:
+                throw new Exception("Invalid read preference ({$readPreference['type']}");
+        }
+    }
+
+    /**
+     * Get a Protocol for the nearest candidate server matching the given types
+     * and read preference. This implements Member Selection as described here:
+     * http://docs.mongodb.org/manual/core/read-preference-mechanics/#replica-set-read-preference-behavior-member-selection
+     *
+     * @param array $allowedServerTypes
+     * @param array $readPreference
+     * @return Protocol
+     * @throws MongoConnectionException
+     */
+    private function getNearestHostProtocol(array $allowedServerTypes, array $readPreference)
+    {
+        $candidates = [];
+        $tagsets = isset($readPreference['tagsets']) ? $readPreference['tagsets'] : [[]];
+        foreach ($tagsets as $tagset) {
+            foreach ($this->replSetStatus['members'] as $key => $member) {
+                $tags = $this->replSetConf['members'][$key]['tags'] ?: [];
+                if (in_array($member['stateStr'], $allowedServerTypes) && array_intersect($tagset, $tags) === $tagset) {
+                    $candidates[] = $member;
+                }
+            }
+            if ($candidates) {
+                break;
+            }
+        }
+        if (!$candidates) {
+            $msg = "No " . implode(' or ', $allowedServerTypes) . " servers available";
+            if (isset($readPreference['tagsets'])) {
+                $msg .= " matching tagsets " . json_encode($readPreference['tagsets']);
+            }
+            throw new MongoConnectionException($msg);
+        }
+
+        // Connect and ping all candidate servers
+        $min_ping = INF;
+        foreach ($candidates as $member) {
+            $host_key = $member['name'];
+            list($host, $port) = explode(':', $host_key);
+            $this->connectToHost($host, $port);
+            if (!isset($this->hosts[$host_key]['ping'])) {
+                $this->pingHost($host, $port);
+            }
+            if ($this->hosts[$host_key]['ping'] < $min_ping) {
+                $min_ping = $this->hosts[$host_key]['ping'];
+            }
+        }
+
+        // Filter candidates to only those within the "nearest group" (default 15ms)
+        $candidates = array_values(array_filter($candidates, function($member) use ($min_ping) {
+            $host_key = $member['name'];
+            return $this->hosts[$host_key]['ping'] - $min_ping < self::RP_DEFAULT_ACCEPTABLE_LATENCY_MS;
+        }));
+
+        // Pick a random host from remaining candidates
+        $theChosenOne = $candidates[mt_rand(0, count($candidates) - 1)];
+        return $this->protocols[$theChosenOne['name']];
     }
 
     /**
@@ -229,12 +435,32 @@ class MongoClient
      *   the set. Includes each host's hostname, its health (1 is healthy),
      *   its state (1 is primary, 2 is secondary, 0 is anything else), the
      *   amount of time it took to ping the server, and when the last ping
-     *   occurred. For example, on a three-member replica set, it might look
-     *   something like:
+     *   occurred.
+     * @throws Exception
      */
     public function getHosts()
     {
-        throw new Exception('Not Implemented');
+        $this->connect();
+        // Ensure pings are up-to-date
+        foreach ($this->hosts as $host) {
+            $this->pingHost($host['host'], $host['port']);
+        }
+        return $this->hosts;
+    }
+
+    private function pingHost($host, $port)
+    {
+        $host_key = "$host:$port";
+        $this->connectToHost($host, $port);
+        $startTime = microtime(true);
+        $this->protocols[$host_key]->opQuery(
+            'admin.$cmd',
+            ['ping' => 1],
+            0, -1, 0,
+            MongoCursor::$timeout
+        );
+        $this->hosts[$host_key]['ping'] = round((microtime(true) - $startTime) * 1000);
+        $this->hosts[$host_key]['lastPing'] = time();
     }
 
     /**
@@ -244,7 +470,7 @@ class MongoClient
      */
     public function getReadPreference()
     {
-        throw new Exception('Not Implemented');
+        return $this->readPreference;
     }
 
     /**
@@ -274,7 +500,7 @@ class MongoClient
             return false;
         }
 
-        $this->protocol->opKillCursors([ (int)$id ], [], MongoCursor::$timeout);
+        $this->protocols[$serverHash]->opKillCursors([ (int)$id ], [], MongoCursor::$timeout);
 
         return true;
     }
@@ -304,8 +530,59 @@ class MongoClient
      */
     public function setReadPreference($readPreference, array $tags = null)
     {
-        throw new Exception('Not Implemented');
+        if ($newPreference = self::_validateReadPreference($readPreference, $tags)) {
+            $this->readPreference = $newPreference;
+        }
+        return (bool)$newPreference;
     }
+
+    public static function _validateReadPreference($readPreference, array $tags = null)
+    {
+        $newPreference = [];
+        if (strcasecmp($readPreference, self::RP_PRIMARY) === 0) {
+            if (!empty($tags)) {
+                trigger_error("You can't use read preference tags with a read preference of PRIMARY", E_USER_WARNING);
+                return false;
+            }
+            $newPreference['type'] = self::RP_PRIMARY;
+        } else if (strcasecmp($readPreference, self::RP_PRIMARY_PREFERRED)) {
+            $newPreference['type'] = self::RP_PRIMARY_PREFERRED;
+        } else if (strcasecmp($readPreference, self::RP_SECONDARY)) {
+            $newPreference['type'] = self::RP_SECONDARY;
+        } else if (strcasecmp($readPreference, self::RP_SECONDARY_PREFERRED)) {
+            $newPreference['type'] = self::RP_SECONDARY_PREFERRED;
+        } else if (strcasecmp($readPreference, self::RP_NEAREST)) {
+            $newPreference['type'] = self::RP_NEAREST;
+        } else {
+            trigger_error("The value '$readPreference' is not valid as read preference type", E_USER_WARNING);
+            return false;
+        }
+
+        if ($tags) {
+            // Also supports string format (dc:east,use:reporting), convert to arrays
+            foreach ($tags as $i => $tagset) {
+                if (is_string($tagset)) {
+                    $array = [];
+                    foreach (explode(',', $tagset) as $keyValuePair) {
+                        list($key, $value) = explode(':', $keyValuePair);
+                        $key = trim($key);
+                        $value = trim($value);
+                        if ($key === '' || $value === '') {
+                            $msg = "Invalid tagset \"$keyValuePair\". Must contain non-empty key and value.";
+                            trigger_error($msg, E_USER_WARNING);
+                            return false;
+                        }
+                        $array[$key] = $value;
+                    }
+                    $tags[$i] = $array;
+                }
+            }
+            $newPreference['tagsets'] = $tags;
+        }
+
+        return $newPreference;
+    }
+
 
     /**
      * String representation of this connection
@@ -314,6 +591,7 @@ class MongoClient
      */
     public function __toString()
     {
-        return (string) $this->host . ':' . (string) $this->port;
+        $firstHost = reset($this->hosts);
+        return $firstHost['host'] . ':' . $firstHost['port'];
     }
 }
