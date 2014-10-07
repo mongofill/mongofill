@@ -21,7 +21,7 @@ class MongoClient
     /**
      * @var boolean
      */
-    public $connected;
+    public $connected = false;
 
     /**
      * @var string

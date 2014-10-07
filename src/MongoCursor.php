@@ -69,11 +69,6 @@ class MongoCursor implements Iterator
     private $querySkip = 0;
 
     /**
-     * @var array|null
-     */
-    private $querySort = null;
-
-    /**
      * @var int
      */
     private $queryTimeout = null;

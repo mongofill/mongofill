@@ -688,16 +688,11 @@ class MongoCollection
             $cmd['group']['finalize'] = $options['finalize'];
         }
 
-        if (isset($options['cond'])) {
+        if (isset($options['condition'])) {
             $cmd['group']['cond'] = $options['condition'];
         }
 
-        $results = $this->db->command($cmd);
-        if (!isset($results['retval'])) {
-            return [];
-        }
-
-        return $results['retval'];
+        return $this->db->command($cmd);
     }
 
     /**
