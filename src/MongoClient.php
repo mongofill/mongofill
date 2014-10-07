@@ -563,6 +563,9 @@ class MongoClient
             foreach ($tags as $i => $tagset) {
                 if (is_string($tagset)) {
                     $array = [];
+                    // Empty string can be used to allow no tag matching in the case where
+                    // tagsets specified earlier in the array do not match any servers
+                    $tagset = $tagset ? explode(',', $tagset) : [];
                     foreach (explode(',', $tagset) as $keyValuePair) {
                         list($key, $value) = explode(':', $keyValuePair);
                         $key = trim($key);
