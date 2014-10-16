@@ -213,8 +213,8 @@ class Socket
         $data = null;
         @socket_recv($this->socket, $data, $length, MSG_WAITALL);
         if (null === $data) {
-            $this->handleSocketReadError();
-            throw new \RuntimeException('unhandled socket read error');
+            $errorMsg = $this->handleSocketReadError();
+            throw new \RuntimeException('unhandled socket read error: ' . $errorMsg);
         }
 
         return $data;
@@ -228,6 +228,7 @@ class Socket
         }
 
         socket_clear_error($this->socket);
+        return socket_strerror($errno);
     }
 
     protected function setTimeout($timeoutInMs)
