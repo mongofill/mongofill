@@ -194,7 +194,7 @@ class MongoCursor implements Iterator
             $query,
             $this->querySkip,
             $this->calculateRequestLimit(),
-            $this->flags,
+            $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             MongoCursor::$timeout,
             $this->fields
         );
@@ -272,7 +272,7 @@ class MongoCursor implements Iterator
             'limit' => $this->queryLimit,
             'batchSize' => $this->batchSize,
             'skip' => $this->querySkip,
-            'flags' => $this->flags,
+            'flags' => $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             'query' => $this->query['$query'],
             'fields' => $this->fields,
             'started_iterating' => $this->fetching,
@@ -346,7 +346,7 @@ class MongoCursor implements Iterator
             $this->getQuery(),
             $this->querySkip,
             $this->calculateRequestLimit(),
-            $this->flags,
+            $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             $this->queryTimeout,
             $this->fields
         );

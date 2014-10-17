@@ -105,8 +105,8 @@ class MongoClient
             }
         }
         $this->options = array_merge($this->options, $options);
-        if ($this->options['replSet']) {
-            $this->replSet = $this->options['replSet'];
+        if ($this->options['replicaSet']) {
+            $this->replSet = $this->options['replicaSet'];
         }
         if ($this->options['readPreference']) {
             $this->setReadPreference($this->options['readPreference'], $this->options['readPreferenceTags']);
@@ -165,17 +165,18 @@ class MongoClient
 
             // Use one request to get both replica set config and status
             $cmd = [
-                '$eval' => 'return {conf: rs.conf(), status: db.runCommand({replSetGetStatus: 1})};',
+                '$eval' => 'return {conf: rs.conf(), status: rs.status()};',
                 'nolock' => true
             ];
             // We must use a raw opQuery here because MongoDB::command cannot be used
             // until the replica set info has been initialized
             $result = reset($this->protocols)->opQuery(
-                'admin.$cmd',
+                'local.$cmd',
                 $cmd,
                 0, -1, 0,
                 MongoCursor::$timeout
             )['result'][0];
+
             // This will fail to get info if server is not using a replica set, but that's fine
             if ($result['ok'] != 1 || !$result['retval']['conf'] || !$result['retval']['status']) {
                 // If we're trying to use a replica set, this is fatal
@@ -545,13 +546,13 @@ class MongoClient
                 return false;
             }
             $newPreference['type'] = self::RP_PRIMARY;
-        } else if (strcasecmp($readPreference, self::RP_PRIMARY_PREFERRED)) {
+        } else if (strcasecmp($readPreference, self::RP_PRIMARY_PREFERRED) === 0) {
             $newPreference['type'] = self::RP_PRIMARY_PREFERRED;
-        } else if (strcasecmp($readPreference, self::RP_SECONDARY)) {
+        } else if (strcasecmp($readPreference, self::RP_SECONDARY) === 0) {
             $newPreference['type'] = self::RP_SECONDARY;
-        } else if (strcasecmp($readPreference, self::RP_SECONDARY_PREFERRED)) {
+        } else if (strcasecmp($readPreference, self::RP_SECONDARY_PREFERRED) === 0) {
             $newPreference['type'] = self::RP_SECONDARY_PREFERRED;
-        } else if (strcasecmp($readPreference, self::RP_NEAREST)) {
+        } else if (strcasecmp($readPreference, self::RP_NEAREST) === 0) {
             $newPreference['type'] = self::RP_NEAREST;
         } else {
             trigger_error("The value '$readPreference' is not valid as read preference type", E_USER_WARNING);
@@ -566,7 +567,7 @@ class MongoClient
                     // Empty string can be used to allow no tag matching in the case where
                     // tagsets specified earlier in the array do not match any servers
                     $tagset = $tagset ? explode(',', $tagset) : [];
-                    foreach (explode(',', $tagset) as $keyValuePair) {
+                    foreach ($tagset as $keyValuePair) {
                         list($key, $value) = explode(':', $keyValuePair);
                         $key = trim($key);
                         $value = trim($value);
