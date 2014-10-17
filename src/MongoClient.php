@@ -120,7 +120,7 @@ class MongoClient
             }
         }
 
-        if (isset($options['connect']) && $options['connect']) {
+        if (!isset($options['connect']) || $options['connect'] === true) {
             $this->connect();
         }
     }
