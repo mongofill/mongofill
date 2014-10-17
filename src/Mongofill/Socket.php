@@ -26,19 +26,7 @@ class Socket
             return true;
         }
 
-        $this->createSocket();
         $this->connectSocket();
-    }
-
-    protected function createSocket()
-    {
-        $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (!$this->socket) {
-            throw new MongoConnectionException(sprintf(
-                'error creating socket: %s',
-                socket_strerror(socket_last_error())
-            ));
-        }
     }
 
     protected function connectSocket()
@@ -55,11 +43,11 @@ class Socket
             }
         }
 
-        $connected = socket_connect($this->socket, $ip, $this->port);
-        if (false === $connected) {
+        $this->socket = pfsockopen($ip, $this->port, $errno, $errstr);
+        if (!$this->socket) {
             throw new MongoConnectionException(sprintf(
                 "unable to connect to $ip:$this->port because: %s",
-                socket_strerror(socket_last_error())
+                "$errstr ($errno)"
             ));
         }
     }
