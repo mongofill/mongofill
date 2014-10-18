@@ -18,6 +18,8 @@ class MongoClient
     const RP_NEAREST   = 'nearest';
     const RP_DEFAULT_ACCEPTABLE_LATENCY_MS = 15;
 
+    const DEFAULT_CONNECT_TIMEOUT_MS = 60000;
+
     /**
      * @var boolean
      */
@@ -84,6 +86,11 @@ class MongoClient
     private $readPreference = ['type' => self::RP_PRIMARY];
 
     /**
+     * @var int
+     */
+    private $connectTimeoutMS;
+
+    /**
      * Creates a new database connection object
      *
      * @param string $server - The server name.
@@ -120,6 +127,11 @@ class MongoClient
             }
         }
 
+        if (isset($options['connectTimeoutMS'])) {
+            $this->connectTimeoutMS = $options['connectTimeoutMS'];
+        } else {
+            $this->connectTimeoutMS = self::DEFAULT_CONNECT_TIMEOUT_MS;
+        }
         if (!isset($options['connect']) || $options['connect'] === true) {
             $this->connect();
         }
@@ -231,7 +243,7 @@ class MongoClient
         $host_key = "$host:$port";
         if (!isset($this->protocols[$host_key])) {
             if (!isset($this->sockets[$host_key])) {
-                $this->sockets[$host_key] = new Socket($host, $port);
+                $this->sockets[$host_key] = new Socket($host, $port, $this->connectTimeoutMS);
                 $this->sockets[$host_key]->connect();
             }
             $this->protocols[$host_key] = new Protocol($this->sockets[$host_key]);

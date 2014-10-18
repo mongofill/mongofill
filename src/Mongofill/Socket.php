@@ -11,13 +11,15 @@ class Socket
     private $socket;
     private $host;
     private $port;
+    private $connectTimeoutMS;
 
     private static $lastRequestId = 3;
 
-    public function __construct($host, $port)
+    public function __construct($host, $port, $connectTimeoutMS = 60000)
     {
         $this->host = $host;
         $this->port = $port;
+        $this->connectTimeoutMS = $connectTimeoutMS;
     }
 
     public function connect()
@@ -43,8 +45,9 @@ class Socket
             }
         }
 
-        $this->socket = pfsockopen($ip, $this->port, $errno, $errstr);
-        if (!$this->socket) {
+        $this->socket = pfsockopen($ip, $this->port, $errno, $errstr, $this->connectTimeoutMS / 1000);
+        if ($this->socket === false) {
+            $this->socket = null;
             throw new MongoConnectionException(sprintf(
                 "unable to connect to $ip:$this->port because: %s",
                 "$errstr ($errno)"
