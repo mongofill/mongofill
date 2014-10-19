@@ -161,13 +161,13 @@ class MongoClient
             return true;
         }
 
-        $latestError = null;
+        $latest_error = null;
         foreach ($this->hosts as $host_key => $host_info) {
             try {
                 $this->connectToHost($host_info['host'], $host_info['port']);
             } catch (MongoConnectionException $e) {
                 // We can tolerate connection failures as long as at least 1 succeeds
-                $latestError = $e;
+                $latest_error = $e;
                 continue;
             }
 
@@ -225,7 +225,7 @@ class MongoClient
 
         if (!$this->protocols) {
             $msg = "Could not connect to any of " . count($this->hosts) .
-                " hosts. Latest error: " . ($latestError ? $latestError->getMessage() : '');
+                " hosts. Latest error: " . ($latest_error ? $latest_error->getMessage() : '');
             throw new MongoConnectionException($msg);
         }
 
@@ -385,8 +385,8 @@ class MongoClient
         }));
 
         // Pick a random host from remaining candidates
-        $theChosenOne = $candidates[mt_rand(0, count($candidates) - 1)];
-        return $this->protocols[$theChosenOne['name']];
+        $the_chosen_one = $candidates[mt_rand(0, count($candidates) - 1)];
+        return $this->protocols[$the_chosen_one['name']];
     }
 
     /**
@@ -465,14 +465,14 @@ class MongoClient
     {
         $host_key = "$host:$port";
         $this->connectToHost($host, $port);
-        $startTime = microtime(true);
+        $start_time = microtime(true);
         $this->protocols[$host_key]->opQuery(
             'admin.$cmd',
             ['ping' => 1],
             0, -1, 0,
             MongoCursor::$timeout
         );
-        $this->hosts[$host_key]['ping'] = round((microtime(true) - $startTime) * 1000);
+        $this->hosts[$host_key]['ping'] = round((microtime(true) - $start_time) * 1000);
         $this->hosts[$host_key]['lastPing'] = time();
     }
 
@@ -543,29 +543,29 @@ class MongoClient
      */
     public function setReadPreference($readPreference, array $tags = null)
     {
-        if ($newPreference = self::_validateReadPreference($readPreference, $tags)) {
-            $this->readPreference = $newPreference;
+        if ($new_preference = self::_validateReadPreference($readPreference, $tags)) {
+            $this->readPreference = $new_preference;
         }
-        return (bool)$newPreference;
+        return (bool)$new_preference;
     }
 
     public static function _validateReadPreference($readPreference, array $tags = null)
     {
-        $newPreference = [];
+        $new_preference = [];
         if (strcasecmp($readPreference, self::RP_PRIMARY) === 0) {
             if (!empty($tags)) {
                 trigger_error("You can't use read preference tags with a read preference of PRIMARY", E_USER_WARNING);
                 return false;
             }
-            $newPreference['type'] = self::RP_PRIMARY;
+            $new_preference['type'] = self::RP_PRIMARY;
         } else if (strcasecmp($readPreference, self::RP_PRIMARY_PREFERRED) === 0) {
-            $newPreference['type'] = self::RP_PRIMARY_PREFERRED;
+            $new_preference['type'] = self::RP_PRIMARY_PREFERRED;
         } else if (strcasecmp($readPreference, self::RP_SECONDARY) === 0) {
-            $newPreference['type'] = self::RP_SECONDARY;
+            $new_preference['type'] = self::RP_SECONDARY;
         } else if (strcasecmp($readPreference, self::RP_SECONDARY_PREFERRED) === 0) {
-            $newPreference['type'] = self::RP_SECONDARY_PREFERRED;
+            $new_preference['type'] = self::RP_SECONDARY_PREFERRED;
         } else if (strcasecmp($readPreference, self::RP_NEAREST) === 0) {
-            $newPreference['type'] = self::RP_NEAREST;
+            $new_preference['type'] = self::RP_NEAREST;
         } else {
             trigger_error("The value '$readPreference' is not valid as read preference type", E_USER_WARNING);
             return false;
@@ -579,12 +579,12 @@ class MongoClient
                     // Empty string can be used to allow no tag matching in the case where
                     // tagsets specified earlier in the array do not match any servers
                     $tagset = $tagset ? explode(',', $tagset) : [];
-                    foreach ($tagset as $keyValuePair) {
-                        list($key, $value) = explode(':', $keyValuePair);
+                    foreach ($tagset as $key_value_pair) {
+                        list($key, $value) = explode(':', $key_value_pair);
                         $key = trim($key);
                         $value = trim($value);
                         if ($key === '' || $value === '') {
-                            $msg = "Invalid tagset \"$keyValuePair\". Must contain non-empty key and value.";
+                            $msg = "Invalid tagset \"$key_value_pair\". Must contain non-empty key and value.";
                             trigger_error($msg, E_USER_WARNING);
                             return false;
                         }
@@ -593,10 +593,10 @@ class MongoClient
                     $tags[$i] = $array;
                 }
             }
-            $newPreference['tagsets'] = $tags;
+            $new_preference['tagsets'] = $tags;
         }
 
-        return $newPreference;
+        return $new_preference;
     }
 
 
@@ -607,7 +607,7 @@ class MongoClient
      */
     public function __toString()
     {
-        $firstHost = reset($this->hosts);
-        return $firstHost['host'] . ':' . $firstHost['port'];
+        $first_host = reset($this->hosts);
+        return $first_host['host'] . ':' . $first_host['port'];
     }
 }
