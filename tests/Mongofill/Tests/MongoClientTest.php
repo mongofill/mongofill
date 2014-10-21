@@ -8,7 +8,7 @@ class MongoClientTest extends TestCase
 {
     public function testServerOptions()
     {
-        $m = new MongoClient('foo', ['port' => 123, 'connect' => false]);
+        $m = new MongoClient('mongodb://foo', ['port' => 123, 'connect' => false]);
         $this->assertEquals('mongodb://foo:123', $m->server);
     }
 
