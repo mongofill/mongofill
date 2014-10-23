@@ -7,6 +7,9 @@ use Mongofill\Protocol;
  */
 class MongoCollection
 {
+    const ASCENDING = 1;
+    const DESCENDING = -1;
+
     /**
      * @var string
      */
