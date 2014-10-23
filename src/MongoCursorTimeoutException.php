@@ -5,6 +5,6 @@
  * this exception is thrown by calling MongoCursor::timeout() on the cursor or
  * setting MongoCursor::$timeout.
  */
-class MongoCursorTimeoutException extends Exception
+class MongoCursorTimeoutException extends MongoException
 {
 }
