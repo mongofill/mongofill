@@ -3,7 +3,7 @@
 /**
  * Caused by accessing a cursor incorrectly or a error receiving a reply.
  */
-class MongoCursorException extends Exception
+class MongoCursorException extends MongoException
 {
     /**
      * The hostname of the server that encountered the error

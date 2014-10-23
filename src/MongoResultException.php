@@ -5,7 +5,7 @@
  * MongoCollection::findAndModify) in the event of failure. The original
  * result document is available through MongoResultException::getDocument.
  */
-class MongoResultException extends Exception
+class MongoResultException extends MongoException
 {
     /**
      * Retrieve the full result document
