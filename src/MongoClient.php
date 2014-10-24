@@ -11,6 +11,7 @@ class MongoClient
     const VERSION = '1.3.0-mongofill';
     const DEFAULT_HOST = 'localhost';
     const DEFAULT_PORT = 27017;
+    const DEFAULT_DATABASE = 'admin';
     const RP_PRIMARY   = 'primary';
     const RP_PRIMARY_PREFERRED = 'primaryPreferred';
     const RP_SECONDARY = 'secondary';
@@ -176,10 +177,6 @@ class MongoClient
 
         if ($nsPart != null && strlen($nsPart) != 0) {// database
             $this->database = $nsPart;
-        } else {
-            if ($this->username != null) {
-                $this->database = "admin";
-            }
         }
 
         $uri_options = [];
@@ -189,7 +186,7 @@ class MongoClient
             $idx = strrpos($part, '=');
 
             if ($idx !== false) {
-                $key = strtolower(substr($part, 0, $idx));
+                $key = substr($part, 0, $idx);
                 $value = substr($part, $idx + 1);
 
                 $uri_options[$key] = $value;
@@ -222,6 +219,10 @@ class MongoClient
 
         if (array_key_exists('db', $this->options)) {
             $this->database = $this->options['db'];
+        }
+
+        if ($this->database == null && $this->username != null) {
+            $this->database = self::DEFAULT_DATABASE;
         }
 
         $idx = strrpos($this->hosts[0], ':');
@@ -313,6 +314,44 @@ class MongoClient
         }
 
         return $this->protocol;
+    }
+
+    /**
+     * @return string - The name of the database to authenticate
+     */
+    public function _getAuthenticationDatabase()
+    {
+        return $this->database;
+    }
+
+    /**
+     * @return string - The username for authentication
+     */
+    public function _getAuthenticationUsername()
+    {
+        return $this->username;
+    }
+
+    /**
+     * @return string - The password for authentication
+     */
+    public function _getAuthenticationPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * @param string $name - The option name.
+     *
+     * @return string - The option value
+     */
+    public function _getOption($name)
+    {
+        if (array_key_exists($name, $this->options)) {
+            return $this->options[$name];
+        }
+
+        return null;
     }
 
     /**
