@@ -182,12 +182,16 @@ class MongoClient
             ];
             // We must use a raw opQuery here because MongoDB::command cannot be used
             // until the replica set info has been initialized
-            $result = reset($this->protocols)->opQuery(
-                'local.$cmd',
-                $cmd,
-                0, -1, 0,
-                MongoCursor::$timeout
-            )['result'][0];
+			$result = apc_fetch("mongo_rs_status");
+			if (!$result) {
+				$result = reset($this->protocols)->opQuery(
+					'local.$cmd',
+					$cmd,
+					0, -1, 0,
+					MongoCursor::$timeout
+				)['result'][0];
+				apc_store("mongo_rs_status", $result, 15);	//expires every 15 seconds
+			}
 
             // This will fail to get info if server is not using a replica set, but that's fine
             if ($result['ok'] != 1 || !$result['retval']['conf'] || !$result['retval']['status']) {
