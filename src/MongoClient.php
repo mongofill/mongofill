@@ -475,7 +475,13 @@ class MongoClient
      */
     public function listDBs()
     {
-        throw new Exception('Not Implemented');
+        $cmd = [
+            'listDatabases' => 1
+        ];
+
+        $result = $this->selectDB(self::DEFAULT_DATABASE)->command($cmd);
+
+        return $result;
     }
 
     /**
