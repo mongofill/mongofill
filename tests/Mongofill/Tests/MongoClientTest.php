@@ -113,4 +113,27 @@ class MongoClientTest extends TestCase
         $cursor->next();
         $this->assertNull($cursor->current());
     }
+
+    public function testListDBs()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+        $data = [
+            'foo' => 'bar',
+            'boolean' => false
+        ];
+
+        $coll->insert($data);
+
+        $result_dbs = $this->getTestClient()->listDBs()['databases'];
+
+        $db_names = array();
+
+        foreach ($result_dbs as $db_info)
+        {
+            $db_names[] = $db_info['name'];
+        }
+
+        $this->assertGreaterThan(0, count($db_names));
+        $this->assertTrue(in_array(self::TEST_DB, $db_names));
+    }
 }
