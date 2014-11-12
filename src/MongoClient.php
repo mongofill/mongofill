@@ -21,7 +21,7 @@ class MongoClient
     const RP_DEFAULT_ACCEPTABLE_LATENCY_MS = 15;
 
     const DEFAULT_CONNECT_TIMEOUT_MS = 60000;
-	const REPL_SET_CACHE_LIFETIME = 15; // in seconds
+    const REPL_SET_CACHE_LIFETIME = 15; // in seconds
 
     /**
      * @var boolean
@@ -178,7 +178,7 @@ class MongoClient
             $this->hosts[$host_key]['health'] = 1; // assume healthy since we connected
             $this->hosts[$host_key]['state'] = 0; // Default to unknown
 
-	        $repl_set_info = $this->getReplSetInfo($host_key);
+            $repl_set_info = $this->getReplSetInfo($host_key);
 
             // This will fail to get info if server is not using a replica set, but that's fine
             if ($repl_set_info['ok'] != 1 || !$repl_set_info['retval']['conf'] || !$repl_set_info['retval']['status']) {
@@ -241,38 +241,38 @@ class MongoClient
         }
     }
 
-	/**
-	 * Get an array with replica set config and status for a given host.
-	 * This will be cached in APC (if available) for up to REPL_SET_CACHE_LIFETIME
-	 * seconds, so servers are not spammed with getReplSetStatus calls, which appear
-	 * to really slow down a MongoDB server when they happen frequently.
-	 * @param $host_key
-	 * @return array
-	 */
-	private function getReplSetInfo($host_key)
-	{
-		// Use one request to get both replica set config and status
-		$cmd = [
-			'$eval' => 'return {conf: rs.conf(), status: rs.status()};',
-			'nolock' => true, // ensure this command does not globally lock the DB
-		];
-		$cache_key = "mongofill:replSetInfo:$host_key";
-		$result = MONGOFILL_USE_APC ? apc_fetch($cache_key) : false;
-		if (!$result) {
-			// We must use a raw opQuery here because MongoDB::command cannot be used
-			// until the replica set info has been initialized
-			$result = $this->protocols[$host_key]->opQuery(
-				'local.$cmd',
-				$cmd,
-				0, -1, 0,
-				MongoCursor::$timeout
-			)['result'][0];
-			if (MONGOFILL_USE_APC) {
-				apc_store($cache_key, $result, self::REPL_SET_CACHE_LIFETIME);
-			}
-		}
-		return $result;
-	}
+    /**
+     * Get an array with replica set config and status for a given host.
+     * This will be cached in APC (if available) for up to REPL_SET_CACHE_LIFETIME
+     * seconds, so servers are not spammed with getReplSetStatus calls, which appear
+     * to really slow down a MongoDB server when they happen frequently.
+     * @param $host_key
+     * @return array
+     */
+    private function getReplSetInfo($host_key)
+    {
+        // Use one request to get both replica set config and status
+        $cmd = [
+            '$eval' => 'return {conf: rs.conf(), status: rs.status()};',
+            'nolock' => true, // ensure this command does not globally lock the DB
+        ];
+        $cache_key = "mongofill:replSetInfo:$host_key";
+        $result = MONGOFILL_USE_APC ? apc_fetch($cache_key) : false;
+        if (!$result) {
+            // We must use a raw opQuery here because MongoDB::command cannot be used
+            // until the replica set info has been initialized
+            $result = $this->protocols[$host_key]->opQuery(
+                'local.$cmd',
+                $cmd,
+                0, -1, 0,
+                MongoCursor::$timeout
+            )['result'][0];
+            if (MONGOFILL_USE_APC) {
+                apc_store($cache_key, $result, self::REPL_SET_CACHE_LIFETIME);
+            }
+        }
+        return $result;
+    }
 
     /**
      * Closes this connection
