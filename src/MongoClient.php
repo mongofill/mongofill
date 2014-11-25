@@ -183,7 +183,12 @@ class MongoClient
         }
 
         foreach (explode(',', $serverPart) as $host_str) {
-            list($host, $port) = explode(':', $host_str);
+            if (strpos($host_str, ':') !== false) {
+                list($host, $port) = explode(':', $host_str);
+            } else {
+                $host = $host_str;
+                $port = self::DEFAULT_PORT;
+            }
             if (preg_match('/\A[a-zA-Z0-9_.\-]+\z/', $host)) {
                 $port = preg_match('/\A[0-9]+\z/', $port) ? $port : self::DEFAULT_PORT;
                 $this->hosts["$host:$port"] = ['host' => $host, 'port' => $port];
