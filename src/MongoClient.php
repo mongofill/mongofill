@@ -301,36 +301,36 @@ class MongoClient
             $this->hosts[$host_key]['health'] = 1; // assume healthy since we connected
             $this->hosts[$host_key]['state'] = 0; // Default to unknown
 
-            $repl_set_info = $this->getReplSetInfo($host_key);
+            if ($this->replSet) {
+                $repl_set_info = $this->getReplSetInfo($host_key);
 
-            // This will fail to get info if server is not using a replica set, but that's fine
-            if ($repl_set_info['ok'] != 1 || !$repl_set_info['retval']['conf'] || !$repl_set_info['retval']['status']) {
-                // If we're trying to use a replica set, this is fatal
-                if ($this->replSet) {
+                // This will fail to get info if server is not using a replica set, but that's fine
+                if ($repl_set_info['ok'] != 1 || !$repl_set_info['retval']['conf'] || !$repl_set_info['retval']['status']) {
+                    // If we're trying to use a replica set, this is fatal
                     $msg = "Unable to get replica set config & status for host $host_key";
                     throw new MongoConnectionException($msg);
-                }
-            } else {
-                $this->replSetConf = $repl_set_info['retval']['conf'];
-                $this->replSetStatus = $repl_set_info['retval']['status'];
-                foreach ($this->replSetStatus['members'] as $member) {
-                    if ($member['stateStr'] === 'ARBITER') {
-                        continue;
+                } else {
+                    $this->replSetConf = $repl_set_info['retval']['conf'];
+                    $this->replSetStatus = $repl_set_info['retval']['status'];
+                    foreach ($this->replSetStatus['members'] as $member) {
+                        if ($member['stateStr'] === 'ARBITER') {
+                            continue;
+                        }
+                        // If this member is the one we are already connected to, save the status
+                        // information under the original host:port combo, which might be different
+                        // than what is listed in the replica set config
+                        if (isset($member['self']) && $member['self'] === true) {
+                            $this->hosts[$host_key]['health'] = $member['health'];
+                            $this->hosts[$host_key]['state'] = $member['state'];
+                        }
+                        list($host, $port) = explode(':', $member['name']);
+                        $this->hosts[$member['name']] = [
+                            'host' => $host,
+                            'port' => $port,
+                            'health' => $member['health'],
+                            'state' => $member['state'],
+                        ];
                     }
-                    // If this member is the one we are already connected to, save the status
-                    // information under the original host:port combo, which might be different
-                    // than what is listed in the replica set config
-                    if (isset($member['self']) && $member['self'] === true) {
-                        $this->hosts[$host_key]['health'] = $member['health'];
-                        $this->hosts[$host_key]['state'] = $member['state'];
-                    }
-                    list($host, $port) = explode(':', $member['name']);
-                    $this->hosts[$member['name']] = [
-                        'host' => $host,
-                        'port' => $port,
-                        'health' => $member['health'],
-                        'state' => $member['state'],
-                    ];
                 }
             }
 
