@@ -18,11 +18,6 @@ class MongoGridFS extends MongoCollection
     private $files;
 
     /**
-     * @var MongoDB
-     */
-    private $db;
-
-    /**
      * @var string
      */
     protected $filesName;
