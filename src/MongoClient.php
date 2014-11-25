@@ -13,6 +13,7 @@ class MongoClient
     const VERSION = '1.3.0-mongofill';
     const DEFAULT_HOST = 'localhost';
     const DEFAULT_PORT = 27017;
+    const DEFAULT_DATABASE = 'admin';
     const RP_PRIMARY   = 'primary';
     const RP_PRIMARY_PREFERRED = 'primaryPreferred';
     const RP_SECONDARY = 'secondary';
@@ -47,6 +48,26 @@ class MongoClient
      * @var array
      */
     private $options;
+
+    /**
+     * @var string
+     */
+    private $username;
+
+    /**
+     * @var string
+     */
+    private $password;
+
+    /**
+     * @var string
+     */
+    private $database;
+
+    /**
+     * @var string
+     */
+    private $uri;
 
     /**
      * @var array<string>
@@ -96,33 +117,72 @@ class MongoClient
     /**
      * Creates a new database connection object
      *
-     * @param string $server - The server name.
+     * @param string $server - The server name. server should have the form:
+     *      mongodb://[username:password@]host1[:port1][,host2[:port2:],...]/db
      * @param array $options - An array of options for the connection.
+     * @throws MongoConnectionException
      */
     public function __construct($server = 'mongodb://localhost:27017', array $options = ['connect' => true])
     {
-        $pos = strpos($server, 'mongodb://');
-        if ($pos !== false) {
-            $server = substr($server, $pos + 10);
+        if (!$server || strpos($server, 'mongodb://') != 0) {
+            throw new MongoConnectionException('malformed uri: ' . $server);
         }
-        list($server, $option_str) = explode('/?', $server);
 
-        $this->options = [];
-        foreach (explode('&', $option_str) as $key_value_pair) {
-            list($key, $value) = explode('=', $key_value_pair);
-            if ($key) {
-                $this->options[$key] = $value;
+        $this->uri = $server;
+
+        $uri = substr($server, 10);
+
+        $serverPart = '';
+        $nsPart = null;
+        $optionsPart = '';
+
+        $idx = strrpos($uri, '/');
+
+        if ($idx === false) {
+            if (strpos($uri, '?') !== false) {
+                throw new MongoConnectionException('malformed uri: ' . $server);
+            }
+
+            $serverPart = $uri;
+            $nsPart = null;
+            $optionsPart = '';
+        } else {
+            $serverPart = substr($uri, 0, $idx);
+            $nsPart = substr($uri, $idx + 1);
+
+            $idx = strrpos($nsPart, '?');
+
+            if ($idx !== false) {
+                $optionsPart = substr($nsPart, $idx + 1);
+                $nsPart = substr($nsPart, 0, $idx);
+            } else {
+                $optionsPart = '';
             }
         }
-        $this->options = array_merge($this->options, $options);
-        if ($this->options['replicaSet']) {
-            $this->replSet = $this->options['replicaSet'];
-        }
-        if ($this->options['readPreference']) {
-            $this->setReadPreference($this->options['readPreference'], $this->options['readPreferenceTags']);
+
+        // username,password,hosts
+        $idx = strrpos($serverPart, '@');
+
+        if ($idx !== false) {
+            $authPart = substr($serverPart, 0, $idx);
+            $serverPart = substr($serverPart, $idx + 1);
+
+            $idx = strrpos($authPart, ':');
+
+            if ($idx === false) {
+                $this->username = urldecode($authPart);
+                $this->password = '';
+            } else {
+                $this->username = urldecode(substr($authPart, 0, $idx));
+                $this->password = urldecode(substr($authPart, $idx + 1));
+            }
         }
 
-        foreach (explode(',', $server) as $host_str) {
+        if (strlen($serverPart) === 0) {
+            throw new MongoConnectionException('malformed uri: ' . $server);
+        }
+
+        foreach (explode(',', $serverPart) as $host_str) {
             list($host, $port) = explode(':', $host_str);
             if (preg_match('/\A[a-zA-Z0-9_.\-]+\z/', $host)) {
                 $port = preg_match('/\A[0-9]+\z/', $port) ? $port : self::DEFAULT_PORT;
@@ -130,12 +190,70 @@ class MongoClient
             }
         }
 
-        if (isset($options['connectTimeoutMS'])) {
-            $this->connectTimeoutMS = $options['connectTimeoutMS'];
+        if ($nsPart != null && strlen($nsPart) != 0) {// database
+            $this->database = $nsPart;
+        }
+
+        $uri_options = [];
+        $split_options = preg_split('/[&;]+/', $optionsPart);
+
+        foreach ($split_options as $part) {
+            $idx = strrpos($part, '=');
+
+            if ($idx !== false) {
+                $key = substr($part, 0, $idx);
+                $value = substr($part, $idx + 1);
+
+                $uri_options[$key] = $value;
+            }
+        }
+
+        if (!$options) {
+            $options = ['connect' => true];
+        }
+
+        $this->options = array_replace($uri_options, $options);
+
+        // handle legacy settings
+        if (array_key_exists('timeout', $this->options) && !array_key_exists('connectTimeoutMS', $this->options)) {
+            $this->options['connectTimeoutMS'] = $this->options['timeout'];
+            unset($this->options['timeout']);
+        }
+        if (array_key_exists('wtimeout', $this->options) && !array_key_exists('wtimeoutms', $this->options)) {
+            $this->options['wtimeoutms'] = $this->options['wtimeout'];
+            unset($this->options['wtimeout']);
+        }
+
+        if (isset($this->options['connectTimeoutMS'])) {
+            $this->connectTimeoutMS = $this->options['connectTimeoutMS'];
         } else {
             $this->connectTimeoutMS = self::DEFAULT_CONNECT_TIMEOUT_MS;
         }
-        if (!isset($options['connect']) || $options['connect'] === true) {
+
+        if (array_key_exists('username', $this->options)) {
+            $this->username = $this->options['username'];
+        }
+
+        if (array_key_exists('password', $this->options)) {
+            $this->password = $this->options['password'];
+        }
+
+        if (array_key_exists('db', $this->options)) {
+            $this->database = $this->options['db'];
+        }
+
+        if ($this->database == null && $this->username != null) {
+            $this->database = self::DEFAULT_DATABASE;
+        }
+
+        if (isset($this->options['replicaSet'])) {
+            $this->replSet = $this->options['replicaSet'];
+        }
+        if (isset($this->options['readPreference'])) {
+            $this->setReadPreference($this->options['readPreference'], $this->options['readPreferenceTags']);
+        }
+
+        if (!isset($this->options['connect']) || $this->options['connect'] === true) {
             $this->connect();
         }
     }
@@ -221,6 +339,15 @@ class MongoClient
         }
 
         $this->connected = true;
+
+        if ($this->database != null) {
+            $db = $this->selectDB($this->database);
+
+            if ($this->username != null) {
+                return $db->authenticate($this->username, $this->password);
+            }
+        }
+
         return true;
     }
 
@@ -414,6 +541,44 @@ class MongoClient
     }
 
     /**
+     * @return string - The name of the database to authenticate
+     */
+    public function _getAuthenticationDatabase()
+    {
+        return $this->database;
+    }
+
+    /**
+     * @return string - The username for authentication
+     */
+    public function _getAuthenticationUsername()
+    {
+        return $this->username;
+    }
+
+    /**
+     * @return string - The password for authentication
+     */
+    public function _getAuthenticationPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * @param string $name - The option name.
+     *
+     * @return string - The option value
+     */
+    public function _getOption($name)
+    {
+        if (array_key_exists($name, $this->options)) {
+            return $this->options[$name];
+        }
+
+        return null;
+    }
+
+    /**
      * Gets a database
      *
      * @param string $name - The database name.
@@ -554,7 +719,13 @@ class MongoClient
      */
     public function listDBs()
     {
-        throw new Exception('Not Implemented');
+        $cmd = [
+            'listDatabases' => 1
+        ];
+
+        $result = $this->selectDB(self::DEFAULT_DATABASE)->command($cmd);
+
+        return $result;
     }
 
     /**

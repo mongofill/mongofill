@@ -516,6 +516,12 @@ class MongoCollectionTest extends TestCase
         $this->assertCount(2, $results);
     }
 
+    public function testSortConstantsExist()
+    {
+        $this->assertSame(1,  MongoCollection::ASCENDING);
+        $this->assertSame(-1, MongoCollection::DESCENDING);
+    }
+
 }
 
 class MongoCollectionWrapper extends MongoCollection {
