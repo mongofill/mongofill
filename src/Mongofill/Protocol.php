@@ -145,7 +145,7 @@ class Protocol
     {
         $binCursors = array_reduce(
             $cursors,
-            function($bin, $cursor) {
+            function ($bin, $cursor) {
                 return $bin .= Util::encodeInt64($cursor);
             },
             ''
@@ -156,10 +156,10 @@ class Protocol
         return $this->putWriteMessage(self::OP_KILL_CURSORS, $data, $options, $timeout);
     }
 
-	public function getServerHash()
-	{
-		return $this->socket->getServerHash();
-	}
+    public function getServerHash()
+    {
+        return $this->socket->getServerHash();
+    }
 
     protected function putWriteMessage($opCode, $opData, array $options, $timeout)
     {

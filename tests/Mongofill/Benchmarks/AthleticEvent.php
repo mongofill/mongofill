@@ -13,8 +13,8 @@ abstract class AthleticEvent extends Base
 {
     const TEST_DB = 'mongofill-benchmark';
 
-    private  $testClient;
-    private  $testDB;
+    private $testClient;
+    private $testDB;
 
     protected function classSetUp()
     {

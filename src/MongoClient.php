@@ -535,7 +535,7 @@ class MongoClient
         }
 
         // Filter candidates to only those within the "nearest group" (default 15ms)
-        $candidates = array_values(array_filter($candidates, function($member) use ($min_ping) {
+        $candidates = array_values(array_filter($candidates, function ($member) use ($min_ping) {
             $host_key = $member['name'];
             return $this->hosts[$host_key]['ping'] - $min_ping < self::RP_DEFAULT_ACCEPTABLE_LATENCY_MS;
         }));
@@ -758,13 +758,13 @@ class MongoClient
                 return false;
             }
             $new_preference['type'] = self::RP_PRIMARY;
-        } else if (strcasecmp($readPreference, self::RP_PRIMARY_PREFERRED) === 0) {
+        } elseif (strcasecmp($readPreference, self::RP_PRIMARY_PREFERRED) === 0) {
             $new_preference['type'] = self::RP_PRIMARY_PREFERRED;
-        } else if (strcasecmp($readPreference, self::RP_SECONDARY) === 0) {
+        } elseif (strcasecmp($readPreference, self::RP_SECONDARY) === 0) {
             $new_preference['type'] = self::RP_SECONDARY;
-        } else if (strcasecmp($readPreference, self::RP_SECONDARY_PREFERRED) === 0) {
+        } elseif (strcasecmp($readPreference, self::RP_SECONDARY_PREFERRED) === 0) {
             $new_preference['type'] = self::RP_SECONDARY_PREFERRED;
-        } else if (strcasecmp($readPreference, self::RP_NEAREST) === 0) {
+        } elseif (strcasecmp($readPreference, self::RP_NEAREST) === 0) {
             $new_preference['type'] = self::RP_NEAREST;
         } else {
             trigger_error("The value '$readPreference' is not valid as read preference type", E_USER_WARNING);

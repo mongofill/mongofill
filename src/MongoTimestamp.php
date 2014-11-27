@@ -29,7 +29,8 @@ class MongoTimestamp
      *
      * @return  - Returns this new timestamp.
      */
-    public function __construct($sec = -1, $inc = -1) {
+    public function __construct($sec = -1, $inc = -1)
+    {
         $this->sec = $sec < 0 ? time() : (int)$sec;
         if ($inc < 0) {
             $this->inc = self::$globalInc;
@@ -45,7 +46,8 @@ class MongoTimestamp
      * @return string - The seconds since epoch represented by this
      *   timestamp.
      */
-    public function  __toString() {
+    public function __toString()
+    {
         return (string)$this->sec;
     }
 }

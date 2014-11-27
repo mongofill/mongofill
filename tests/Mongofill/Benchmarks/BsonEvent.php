@@ -5,7 +5,8 @@ namespace Mongofill\Benchmarks;
 class BsonEvent extends AthleticEvent
 {
 
-    public function __construct() {
+    public function __construct()
+    {
         // generate documents to encode
         $this->simpleDoc = $this->buildSimpleDocument();
         $this->simpleNestedDoc = $this->buildSimpleNestedDocument();

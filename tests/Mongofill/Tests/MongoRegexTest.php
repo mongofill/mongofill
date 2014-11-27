@@ -6,7 +6,7 @@ use MongoRegex;
 
 class MongoRegexTest extends TestCase
 {
-    function testConstruct()
+    public function testConstruct()
     {
         $regex = new MongoRegex('/foo/i');
         $this->assertSame('foo', $regex->regex);
@@ -16,7 +16,7 @@ class MongoRegexTest extends TestCase
     /**
      * @expectedException MongoException
      */
-    function testConstructInvalidRegex()
+    public function testConstructInvalidRegex()
     {
         new MongoRegex('0123456789abcdef01234567');
     }

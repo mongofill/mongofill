@@ -368,7 +368,7 @@ class MongoCursor implements Iterator
     {
         if ($this->queryLimit < 0) {
             return $this->queryLimit;
-        } else if ($this->batchSize < 0) {
+        } elseif ($this->batchSize < 0) {
             return $this->batchSize;
         }
 
@@ -380,7 +380,7 @@ class MongoCursor implements Iterator
 
         if ($this->batchSize && (!$limitAt || $this->batchSize <= $limitAt)) {
             return $this->batchSize;
-        } else if ($limitAt && (!$limitAt || $this->batchSize > $limitAt)) {
+        } elseif ($limitAt && (!$limitAt || $this->batchSize > $limitAt)) {
             return $limitAt;
         }
 

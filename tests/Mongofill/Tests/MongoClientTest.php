@@ -115,8 +115,7 @@ class MongoClientTest extends TestCase
 
         $db_names = array();
 
-        foreach ($result_dbs as $db_info)
-        {
+        foreach ($result_dbs as $db_info) {
             $db_names[] = $db_info['name'];
         }
 

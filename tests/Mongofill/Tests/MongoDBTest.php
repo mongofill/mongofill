@@ -111,7 +111,7 @@ class MongoDBTest extends TestCase
 
 
         $cmd = $admin->command(
-            ['$eval' => new \MongoCode('function(y) { while(i < 1000000000) { i++;} }', ['x' => 2])], 
+            ['$eval' => new \MongoCode('function (y) { while(i < 1000000000) { i++;} }', ['x' => 2])],
             ['timeout' => 1]
         );
     }
@@ -121,7 +121,7 @@ class MongoDBTest extends TestCase
         $db = $this->getTestDB();
 
         $func =
-           "function(greeting, name) { ".
+           "function (greeting, name) { ".
                "return greeting+', '+name+', says '+greeter;".
            "}";
         $scope = array("greeter" => "Fred");

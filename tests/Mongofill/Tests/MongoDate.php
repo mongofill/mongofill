@@ -5,7 +5,7 @@ namespace Mongofill\Tests;
 use MongoId;
 use MongoDate;
 
-class MongoDateTest extends TestCase
+class MongoDate extends TestCase
 {
 
     public function testDateInsert()

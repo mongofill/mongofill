@@ -35,7 +35,7 @@ class MongoId
     /**
      * @var int
      */
-    static private $refInc = null;
+    private static $refInc = null;
 
     /**
      * Creates a new id
@@ -52,7 +52,7 @@ class MongoId
         $this->hostname = self::getHostname();
         if (null === $id) {
             $id = $this->generateId();
-        } else if (self::isValid($id)) {
+        } elseif (self::isValid($id)) {
             $this->disassembleId($id);
         } else {
             throw new MongoException('Invalid object ID', 19);

@@ -59,4 +59,3 @@ class MongoIdTest extends TestCase
         $this->assertEquals($original, $build);
     }
 }
-

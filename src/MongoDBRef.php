@@ -4,8 +4,8 @@
  * This class can be used to create lightweight links between objects in
  * different collections.
  */
-class MongoDBRef {
-
+class MongoDBRef
+{
     private function __construct($collection, $id, $db = null)
     {
         $this->{'$ref'} = $collection;
@@ -90,4 +90,3 @@ class MongoDBRef {
         return false;
     }
 }
-

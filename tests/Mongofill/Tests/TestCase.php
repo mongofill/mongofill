@@ -12,7 +12,7 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
     /**
      * @var MongoClient
      */
-    private  $testClient;
+    private $testClient;
 
     protected function setUp()
     {
@@ -29,7 +29,7 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
     /**
      * @return \MongoClient
      */
-    protected  function getTestClient()
+    protected function getTestClient()
     {
         if (!$this->testClient) {
             $this->testClient = new MongoClient();

@@ -26,7 +26,8 @@ class MongoDate
      *
      * @return  - Returns this new date.
      */
-    public function __construct($sec = 0, $usec = 0) {
+    public function __construct($sec = 0, $usec = 0)
+    {
         if (func_num_args() == 0) {
             $time = microtime(true);
             $sec = floor($time);
@@ -41,7 +42,8 @@ class MongoDate
      *
      * @return string - This date.
      */
-    public function __toString() {
+    public function __toString()
+    {
         return (string) $this->sec . ' ' . $this->usec;
     }
 
@@ -50,7 +52,8 @@ class MongoDate
      *
      * @return int
      */
-    public function getMs() {
+    public function getMs()
+    {
         return $this->sec*1000 + (int)floor($this->usec/1000);
     }
 
@@ -59,7 +62,8 @@ class MongoDate
      *
      * @param int milliseconds since Unix epoch
      */
-    public static function createFromMs($val) {
+    public static function createFromMs($val)
+    {
         $usec = (int)(((($val * 1000) % 1000000) + 1000000) % 1000000);
         $sec = (int)(($val / 1000) - ($val < 0 && $usec));
         return new MongoDate($sec, $usec);

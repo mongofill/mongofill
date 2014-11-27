@@ -364,7 +364,7 @@ class MongoCollectionTest extends TestCase
     {
         $expected = 'qux_text_baz_text';
         $index = [
-            'foo' => -1, 
+            'foo' => -1,
             'bar' => 1,
             'weights' => [
                 'qux' => 30,
@@ -525,8 +525,10 @@ class MongoCollectionTest extends TestCase
 
 }
 
-class MongoCollectionWrapper extends MongoCollection {
-    static public function toIndexString($keys) {
+class MongoCollectionWrapper extends MongoCollection
+{
+    public static function toIndexString($keys)
+    {
         return parent::toIndexString($keys);
     }
 }

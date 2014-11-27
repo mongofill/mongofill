@@ -10,6 +10,6 @@ class MongoTest extends TestCase
     public function testConstruct()
     {
         $mongo = new Mongo();
-        $this->assertTrue($mongo instanceOf MongoClient);
+        $this->assertTrue($mongo instanceof MongoClient);
     }
 }
