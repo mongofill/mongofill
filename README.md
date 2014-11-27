@@ -88,3 +88,8 @@ php ./vendor/bin/athletic -b tests/bootstrap.php  -p tests/Mongofill/Benchmarks/
 
 Some results can be find at: https://gist.github.com/mcuadros/9551290
 
+
+Replica Sets & APC
+---------
+
+When using a replica set, the Mongofill driver needs to fetch information about the replica set configuration and status. To improve performance, the driver will attempt to use APC (apc_fetch, apc_store) to cache replica set data. The APC functions should be automatically installed with HHVM, but if you plan on using the Mongofill driver with PHP, you'll need to make sure APC is installed if you want the performance boost. For PHP 5.5 and higher, this would be the APCu extension. If APC is not installed, replica sets will still function, they just won't be as fast.
