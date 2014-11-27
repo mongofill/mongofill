@@ -11,13 +11,15 @@ class Socket
     private $socket;
     private $host;
     private $port;
+    private $connectTimeoutMS;
 
     private static $lastRequestId = 3;
 
-    public function __construct($host, $port)
+    public function __construct($host, $port, $connectTimeoutMS = 60000)
     {
         $this->host = $host;
         $this->port = $port;
+        $this->connectTimeoutMS = $connectTimeoutMS;
     }
 
     public function connect()
@@ -26,19 +28,7 @@ class Socket
             return true;
         }
 
-        $this->createSocket();
         $this->connectSocket();
-    }
-
-    protected function createSocket()
-    {
-        $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (!$this->socket) {
-            throw new MongoConnectionException(sprintf(
-                'error creating socket: %s',
-                socket_strerror(socket_last_error())
-            ));
-        }
     }
 
     protected function connectSocket()
@@ -55,12 +45,32 @@ class Socket
             }
         }
 
-        $connected = socket_connect($this->socket, $ip, $this->port);
-        if (false === $connected) {
-            throw new MongoConnectionException(sprintf(
-                'unable to connect %s',
-                socket_strerror(socket_last_error())
-            ));
+        // For some reason, PHP doesn't currently allow resources opened with
+        // fsockopen/pfsockopen to be used with socket_* functions, but HHVM does.
+        if (defined('HHVM_VERSION')) {
+            $this->socket = pfsockopen($ip, $this->port, $errno, $errstr, $this->connectTimeoutMS / 1000);
+            if ($this->socket === false) {
+                $this->socket = null;
+                throw new MongoConnectionException(sprintf(
+                    "unable to connect to $ip:$this->port because: %s",
+                    "$errstr ($errno)"
+                ));
+            }
+        } else {
+            $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+            if (!$this->socket) {
+                throw new MongoConnectionException(sprintf(
+                    'error creating socket: %s',
+                    socket_strerror(socket_last_error())
+                ));
+            }
+            $connected = socket_connect($this->socket, $ip, $this->port);
+            if (!$connected) {
+                throw new MongoConnectionException(sprintf(
+                    "unable to connect to $ip:$this->port because: %s",
+                    socket_strerror(socket_last_error())
+                ));
+            }
         }
     }
 
@@ -101,6 +111,11 @@ class Socket
         }
 
         return true;
+    }
+
+    public function getServerHash()
+    {
+        return "$this->host:$this->port";
     }
 
     protected function throwExceptionIfError(array $record)
@@ -208,8 +223,8 @@ class Socket
         $data = null;
         @socket_recv($this->socket, $data, $length, MSG_WAITALL);
         if (null === $data) {
-            $this->handleSocketReadError();
-            throw new \RuntimeException('unhandled socket read error');
+            $errorMsg = $this->handleSocketReadError();
+            throw new \RuntimeException('unhandled socket read error: ' . $errorMsg);
         }
 
         return $data;
@@ -223,6 +238,7 @@ class Socket
         }
 
         socket_clear_error($this->socket);
+        return socket_strerror($errno);
     }
 
     protected function setTimeout($timeoutInMs)

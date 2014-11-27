@@ -1,7 +1,5 @@
 <?php
 
-use Mongofill\Protocol;
-
 /**
  * Represents a MongoDB collection.
  */
@@ -9,6 +7,21 @@ class MongoCollection
 {
     const ASCENDING = 1;
     const DESCENDING = -1;
+
+    /**
+     * @var MongoDB
+     */
+    public $db;
+
+    /**
+     * @var int
+     */
+    public $w;
+
+    /**
+     * @var int
+     */
+    public $wtimeout;
 
     /**
      * @var string
@@ -21,19 +34,14 @@ class MongoCollection
     private $name;
 
     /**
-     * @var MongoDB
-     */
-    private $db;
-
-    /**
      * @var MongoClient
      */
     private $client;
 
     /**
-     * @var Protocol
+     * @var array
      */
-    private $protocol;
+    private $readPreference;
 
     /**
      * Creates a new collection
@@ -47,9 +55,9 @@ class MongoCollection
     {
         $this->db = $db;
         $this->name = $name;
+        $this->readPreference = $db->getReadPreference();
         $this->fqn = $db->_getFullCollectionName($name);
         $this->client = $db->_getClient();
-        $this->protocol = $this->client->_getProtocol();
     }
 
     /**
@@ -238,7 +246,7 @@ class MongoCollection
         $this->fillIdInDocumentIfNeeded($document);
         $documents = [&$document];
 
-        return $this->protocol->opInsert(
+        return $this->client->_getWriteProtocol()->opInsert(
             $this->fqn,
             $documents,
             $options,
@@ -270,7 +278,7 @@ class MongoCollection
             $this->fillIdInDocumentIfNeeded($documents[$keys[$i]]);
         }
 
-        $this->protocol->opInsert($this->fqn, $documents, $options, $timeout);
+        $this->client->_getWriteProtocol()->opInsert($this->fqn, $documents, $options, $timeout);
 
         // Fake response for async insert -
         // TODO: detect "w" option and return status array
@@ -309,7 +317,7 @@ class MongoCollection
             $timeout = $options['timeout'];
         }
 
-        return $this->protocol->opUpdate(
+        return $this->client->_getWriteProtocol()->opUpdate(
             $this->fqn,
             $criteria,
             $newObject,
@@ -367,7 +375,7 @@ class MongoCollection
             $timeout = $options['timeout'];
         }
 
-        return $this->protocol->opDelete(
+        return $this->client->_getWriteProtocol()->opDelete(
             $this->fqn,
             $criteria,
             $options,
@@ -553,24 +561,27 @@ class MongoCollection
     /**
      * Set the read preference for this collection
      *
-     * @param string $read_preference -
-     * @param array  $tags            -
+     * @param string $readPreference
+     * @param array  $tags
      *
-     * @return bool -
+     * @return bool
      */
     public function setReadPreference($readPreference, array $tags = null)
     {
-        throw new Exception('Not Implemented');
+        if ($newPreference = MongoClient::_validateReadPreference($readPreference, $tags)) {
+            $this->readPreference = $newPreference;
+        }
+        return (bool)$newPreference;
     }
 
     /**
      * Get the read preference for this collection
      *
-     * @return array -
+     * @return array
      */
     public function getReadPreference()
     {
-        throw new Exception('Not Implemented');
+        return $this->readPreference;
     }
 
     /**
@@ -680,16 +691,11 @@ class MongoCollection
             $cmd['group']['finalize'] = $options['finalize'];
         }
 
-        if (isset($options['cond'])) {
+        if (isset($options['condition'])) {
             $cmd['group']['cond'] = $options['condition'];
         }
 
-        $results = $this->db->command($cmd);
-        if (!isset($results['retval'])) {
-            return [];
-        }
-
-        return $results['retval'];
+        return $this->db->command($cmd);
     }
 
     /**

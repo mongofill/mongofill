@@ -1,7 +1,5 @@
 <?php
 
-use Mongofill\Protocol;
-
 /**
  * A cursor is used to iterate through the results of a database query.
  */
@@ -18,11 +16,6 @@ class MongoCursor implements Iterator
      * @var MongoClient
      */
     private $client;
-
-    /**
-     * @var Protocol
-     */
-    private $protocol;
 
     /**
      * Full collection name
@@ -76,11 +69,6 @@ class MongoCursor implements Iterator
     private $querySkip = 0;
 
     /**
-     * @var array|null
-     */
-    private $querySort = null;
-
-    /**
      * @var int
      */
     private $queryTimeout = null;
@@ -96,19 +84,22 @@ class MongoCursor implements Iterator
     private $flags = 0;
 
     /**
+     * @var array
+     */
+    private $readPreference;
+
+    /**
      * Create a new cursor
      *
-     * @param mongoclient $connection - Database connection.
+     * @param MongoClient $client     - Database connection.
      * @param string      $ns         - Full name of database and collection.
      * @param array       $query      - Database query.
      * @param array       $fields     - Fields to return.
-     *
-     * @return - Returns the new cursor.
      */
-    public function __construct(MongoClient $connection, $ns, array $query = [], array $fields = [])
+    public function __construct(MongoClient $client, $ns, array $query = [], array $fields = [])
     {
-        $this->client = $connection;
-        $this->protocol = $connection->_getProtocol();
+        $this->client = $client;
+        $this->readPreference = $client->getReadPreference();
         $this->fcn = $ns;
         $this->fields = $fields;
         $this->query['$query'] = $query;
@@ -198,12 +189,12 @@ class MongoCursor implements Iterator
             '$explain' => true
         ];
 
-        $response = $this->protocol->opQuery(
+        $response = $this->client->_getReadProtocol($this->readPreference)->opQuery(
             $this->fcn,
             $query,
             $this->querySkip,
             $this->calculateRequestLimit(),
-            $this->flags,
+            $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             MongoCursor::$timeout,
             $this->fields
         );
@@ -281,12 +272,12 @@ class MongoCursor implements Iterator
             'limit' => $this->queryLimit,
             'batchSize' => $this->batchSize,
             'skip' => $this->querySkip,
-            'flags' => $this->flags,
+            'flags' => $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             'query' => $this->query['$query'],
             'fields' => $this->fields,
             'started_iterating' => $this->fetching,
             'id' => $this->cursorId,
-            'server' => (string) $this->client
+            'server' => $this->client->_getReadProtocol($this->readPreference)->getServerHash(),
         ];
 
         //TODO: missing opReplay information
@@ -321,7 +312,7 @@ class MongoCursor implements Iterator
             'query' => $this->query['$query']
         ];
 
-        $response = $this->protocol->opQuery(
+        $response = $this->client->_getReadProtocol($this->readPreference)->opQuery(
             $ns[0] . '.$cmd',
             $query, 0, -1, 0,
             $this->queryTimeout
@@ -350,12 +341,12 @@ class MongoCursor implements Iterator
     private function fetchDocuments()
     {
         $this->fetching = true;
-        $response = $this->protocol->opQuery(
+        $response = $this->client->_getReadProtocol($this->readPreference)->opQuery(
             $this->fcn,
             $this->getQuery(),
             $this->querySkip,
             $this->calculateRequestLimit(),
-            $this->flags,
+            $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             $this->queryTimeout,
             $this->fields
         );
@@ -416,7 +407,7 @@ class MongoCursor implements Iterator
             return;
         }
 
-        $response = $this->protocol->opGetMore(
+        $response = $this->client->_getReadProtocol($this->readPreference)->opGetMore(
             $this->fcn,
             $limit,
             $this->cursorId,
@@ -528,7 +519,7 @@ class MongoCursor implements Iterator
      */
     public function getReadPreference()
     {
-        throw new Exception('Not Implemented');
+        return $this->readPreference;
     }
 
     /**
@@ -581,9 +572,12 @@ class MongoCursor implements Iterator
      *
      * @return MongoCursor - Returns this cursor.
      */
-    public function setReadPreference($readPreference, array $tags = [])
+    public function setReadPreference($readPreference, array $tags = null)
     {
-        throw new Exception('Not Implemented');
+        if ($newPreference = MongoClient::_validateReadPreference($readPreference, $tags)) {
+            $this->readPreference = $newPreference;
+        }
+        return $this;
     }
 
     /**

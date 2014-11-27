@@ -512,8 +512,9 @@ class MongoCollectionTest extends TestCase
 
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $coll->batchInsert($docs);
-        $results = $coll->group($keys, $initial, $reduce);
-        $this->assertCount(2, $results);
+        $result = $coll->group($keys, $initial, $reduce);
+        $this->assertCount(2, $result['retval']);
+        $this->assertEquals(1, $result['ok']);
     }
 
     public function testSortConstantsExist()
