@@ -345,14 +345,6 @@ class MongoClient
 
         $this->connected = true;
 
-        if ($this->database != null) {
-            $db = $this->selectDB($this->database);
-
-            if ($this->username != null) {
-                return $db->authenticate($this->username, $this->password);
-            }
-        }
-
         return true;
     }
 
@@ -370,6 +362,16 @@ class MongoClient
                 $this->sockets[$host_key]->connect();
             }
             $this->protocols[$host_key] = new Protocol($this->sockets[$host_key]);
+
+            if ($this->database != null) {
+                $db = $this->selectDB($this->database);
+
+                if ($this->username != null) {
+                    return $db->authenticate($this->username, $this->password, [
+                        'protocol' => $this->protocols[$host_key],
+                    ]);
+                }
+            }
         }
     }
 
