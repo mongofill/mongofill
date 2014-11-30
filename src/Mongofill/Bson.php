@@ -117,6 +117,10 @@ class Bson
                 }
                 break;
             case 'string':
+                if (!self::isUtf8($value)) {
+                    throw new \MongoException("non-utf8 string: $value", \MongoException::NON_UTF_STRING);
+                }
+
                 $bin = pack('V', strlen($value)+1) . $value . "\0";
                 $sig  = self::ETYPE_STRING;
                 break;
@@ -268,6 +272,24 @@ class Bson
         }
 
         return [$name, $value];
+    }
+
+    private static function isUtf8($s)
+    {
+        for ($i = 0, $len = strlen($s); $i < $len; $i++) {
+            $c = ord($s[$i]);
+            if ($i + 3 < $len && ($c & 248) === 240 && (ord($s[$i + 1]) & 192) === 128 && (ord($s[$i + 2]) & 192) === 128 && (ord($s[$i + 3]) & 192) === 128) {
+                $i += 3;
+            } else if ($i + 2 < $len && ($c & 240) === 224 && (ord($s[$i + 1]) & 192) === 128 && (ord($s[$i + 2]) & 192) === 128) {
+                $i += 2;
+            } else if ($i + 1 < $len && ($c & 224) === 192 && (ord($s[$i + 1]) & 192) === 128) {
+                $i += 1;
+            } else if (($c & 128) !== 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static function decDocument($data, &$offset)

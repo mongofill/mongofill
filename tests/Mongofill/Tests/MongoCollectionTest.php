@@ -83,6 +83,29 @@ class MongoCollectionTest extends TestCase
         $coll->insert($data, ['j' => true, 'w' => 0]);
     }
 
+    /**
+     * @dataProvider provideNonUtf8Data
+     * @expectedException MongoException
+     * @expectedExceptionMessage non-utf8 string
+     * @expectedExceptionCode MongoException::NON_UTF_STRING
+     */
+    public function testInsertNonUtf8($data)
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+
+        $coll->insert($data);
+    }
+
+    public function provideNonUtf8Data()
+    {
+        return [
+            [['_id' => "\xFE\xF0"]],
+            [['x' => "\xFE\xF0"]],
+            [(object) ['x' => "\xFE\xF0"]],
+            [['x' => new \MongoCode('return y;', ['y' => "\xFE\xF0"])]],
+        ];
+    }
+
     public function testBatchInsert()
     {
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
@@ -181,6 +204,18 @@ class MongoCollectionTest extends TestCase
         $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
         $result = $coll->remove(['foo' => 'qux'], ['w' => 0]);
         $this->assertTrue($result);
+    }
+
+    /**
+     * @expectedException MongoException
+     * @expectedExceptionMessage non-utf8 string
+     * @expectedExceptionCode MongoException::NON_UTF_STRING
+     */
+    public function testRemoveNonUtf8Criteria()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+
+        $coll->remove(['foo' => "\xFE\xF0"]);
     }
 
     public function testDrop()
@@ -283,6 +318,36 @@ class MongoCollectionTest extends TestCase
         $result = $coll->update(['foo' =>  'bar'], [
             '$setaaa' => ['foo' => 'notbar']
         ], ['w' => 0]);
+    }
+
+    /**
+     * @expectedException MongoException
+     * @expectedExceptionMessage non-utf8 string
+     * @expectedExceptionCode MongoException::NON_UTF_STRING
+     */
+    public function testUpdateNonUtf8Criteria()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+
+        $doc = ['_id' => 1, 'foo' => 'bar'];
+        $coll->insert($doc);
+
+        $coll->update(['foo' => "\xFE\xF0"], ['$set' => ['foo' => 'bar']]);
+    }
+
+    /**
+     * @expectedException MongoException
+     * @expectedExceptionMessage non-utf8 string
+     * @expectedExceptionCode MongoException::NON_UTF_STRING
+     */
+    public function testUpdateNonUtf8Document()
+    {
+        $coll = $this->getTestDB()->selectCollection(__FUNCTION__);
+
+        $doc = ['_id' => 1, 'foo' => 'bar'];
+        $coll->insert($doc);
+
+        $coll->update(['_id' => 1], ['$set' => ['foo' => "\xFE\xF0"]]);
     }
 
     public function testSave()
@@ -522,7 +587,6 @@ class MongoCollectionTest extends TestCase
         $this->assertSame(1,  MongoCollection::ASCENDING);
         $this->assertSame(-1, MongoCollection::DESCENDING);
     }
-
 }
 
 class MongoCollectionWrapper extends MongoCollection
