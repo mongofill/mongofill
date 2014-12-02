@@ -390,7 +390,7 @@ class MongoClient
             '$eval' => 'return {conf: rs.conf(), status: rs.status()};',
             'nolock' => true, // ensure this command does not globally lock the DB
         ];
-        $cache_key = "mongofill:replSetInfo:$host_key";
+        $cache_key = "mongofill:replSetInfo:$host_key:".__FILE__;
         $result = MONGOFILL_USE_APC ? apc_fetch($cache_key) : false;
         if (!$result) {
             // We must use a raw opQuery here because MongoDB::command cannot be used
