@@ -463,10 +463,12 @@ class MongoCollectionTest extends TestCase
 
         $record = $coll->findAndModify(
             ['name'=>'bar'],
-            ['$inc' => ['value' => 1]],
-            null,
-            ['new' => true, 'upsert' => true]
+            ['$inc' => ['value' => 1]]
         );
+
+        $this->assertEquals(1, $record['value']);
+
+        $record = $coll->findOne(['name'=>'bar']);
 
         $this->assertEquals('bar', $record['name']);
         $this->assertEquals(2, $record['value']);
