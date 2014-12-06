@@ -177,7 +177,8 @@ class MongoCollection
      *   document when new is set.
      */
     public function findAndModify(
-        array $query, array $update = null, array $fields = null, array $options
+        array $query, array $update = null, array $fields = null,
+        array $options = null
     )
     {
         $command = ['findandmodify' => $this->name];
@@ -194,7 +195,10 @@ class MongoCollection
             $command['fields'] = $fields;
         }
 
-        $command = array_merge($command, $options);
+        if ($options) {
+            $command = array_merge($command, $options);
+        }
+
         $result = $this->db->command($command);
 
         if (isset($result['value'])) {
