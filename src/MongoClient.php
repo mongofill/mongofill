@@ -385,22 +385,20 @@ class MongoClient
      */
     private function getReplSetInfo($host_key)
     {
-        // Use one request to get both replica set config and status
-        $cmd = [
-            '$eval' => 'return {conf: rs.conf(), status: rs.status()};',
-            'nolock' => true, // ensure this command does not globally lock the DB
-        ];
         $cache_key = "mongofill:replSetInfo:$host_key:".__FILE__;
         $result = MONGOFILL_USE_APC ? apc_fetch($cache_key) : false;
         if (!$result) {
             // We must use a raw opQuery here because MongoDB::command cannot be used
             // until the replica set info has been initialized
-            $result = $this->protocols[$host_key]->opQuery(
-                'local.$cmd',
-                $cmd,
-                0, -1, 0,
-                MongoCursor::$timeout
-            )['result'][0];
+            $result = [
+                'ok' => 1,
+                'retval' => [
+                    'conf' => $this->selectDB('local')->selectCollection('system.replset')->findOne(),
+                    'status' => $this->selectDB('admin')->command([
+                        'replSetGetStatus' => 1,
+                    ]),
+                ],
+            ];
             if (MONGOFILL_USE_APC) {
                 apc_store($cache_key, $result, self::REPL_SET_CACHE_LIFETIME);
             }
