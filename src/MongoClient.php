@@ -432,7 +432,7 @@ class MongoClient
     public function _getWriteProtocol()
     {
         $this->connect();
-        if (!$this->replSet) {
+        if (!$this->replSet || !isset($this->replSetStatus['members'])) {
             return reset($this->protocols);
         }
         foreach ($this->replSetStatus['members'] as $member) {
