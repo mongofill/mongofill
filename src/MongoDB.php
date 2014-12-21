@@ -121,7 +121,11 @@ class MongoDB
             $timeout = $options['timeout'];
         }
 
-        $response = $this->client->_getWriteProtocol()->opQuery(
+        $protocol = empty($options['protocol'])
+            ? $this->client->_getWriteProtocol()
+            : $options['protocol'];
+
+        $response = $protocol->opQuery(
             "{$this->name}.\$cmd",
             $cmd,
             0, -1, 0,
@@ -220,15 +224,17 @@ class MongoDB
      *
      * @param string $username - The username.
      * @param string $password - The password (in plaintext).
+     * @param array $options - This parameter is an associative array of
+     *   the form array("optionname" => boolean, ...).
      *
      * @return array - Returns database response. If the login was
      *   successful, it will return    If something went wrong, it will
      *   return    ("auth fails" could be another message, depending on
      *   database version and what when wrong).
      */
-    public function authenticate($username, $password)
+    public function authenticate($username, $password, $options = [])
     {
-        $response = $this->command(['getnonce' => 1]);
+        $response = $this->command(['getnonce' => 1], $options);
         if (!isset($response['nonce'])) {
             throw new Exception('Cannot get nonce');
         }
@@ -243,7 +249,7 @@ class MongoDB
             'user' => $username,
             'nonce' => $nonce,
             'key' => $digest
-        ]);
+        ], $options);
     }
 
     /**
