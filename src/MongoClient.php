@@ -594,7 +594,9 @@ class MongoClient
     {
         if (!isset($this->databases[$name])) {
             $this->databases[$name] = new MongoDB($this, $name);
-            $this->databases[$name]->authenticate($this->username, $this->password);
+            if ($this->username) {
+                $this->databases[$name]->authenticate($this->username, $this->password);
+            }
         }
 
         return $this->databases[$name];
