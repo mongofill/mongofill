@@ -294,8 +294,6 @@ class MongoCursor implements Iterator
      */
     public function count($foundOnly = false)
     {
-        $this->doQuery();
-
         if ($foundOnly) {
             return $this->countLocalData();
         }
