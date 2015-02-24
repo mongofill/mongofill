@@ -254,8 +254,11 @@ class MongoClient
         if (isset($this->options['replicaSet'])) {
             $this->replSet = $this->options['replicaSet'];
         }
+
         if (isset($this->options['readPreference'])) {
-            $this->setReadPreference($this->options['readPreference'], $this->options['readPreferenceTags']);
+            $tags = isset($this->options['readPreferenceTags']) ? $this->options['readPreferenceTags'] : null;
+
+            $this->setReadPreference($this->options['readPreference'], $tags);
         }
 
         if (!isset($this->options['connect']) || $this->options['connect'] === true) {
