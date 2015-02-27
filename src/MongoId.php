@@ -5,7 +5,7 @@
  * into the database without an _id field, an _id field will be added to it
  * with a MongoId instance as its value.
  */
-class MongoId
+class MongoId implements \Serializable
 {
     /**
      * @var string
@@ -60,6 +60,26 @@ class MongoId
 
         $this->id = $id;
         $this->{'$id'} = $id;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return string
+     */
+    public function serialize()
+    {
+        return $this->__toString();
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return void
+     */
+    public function unserialize($serialized)
+    {
+        $this->id = $serialized;
     }
 
     private function generateId()
