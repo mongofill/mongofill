@@ -80,6 +80,7 @@ class MongoId implements \Serializable
     public function unserialize($serialized)
     {
         $this->id = $serialized;
+        $this->{'$id'} = $serialized;
     }
 
     private function generateId()
