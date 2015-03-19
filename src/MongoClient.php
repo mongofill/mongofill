@@ -3,7 +3,9 @@
 use Mongofill\Protocol;
 use Mongofill\Socket;
 
-define('MONGOFILL_USE_APC', function_exists('apc_store'));
+if (!defined('MONGOFILL_USE_APC')) {
+    define('MONGOFILL_USE_APC', function_exists('apc_store'));
+}
 
 /**
  * A connection manager for PHP and MongoDB.
