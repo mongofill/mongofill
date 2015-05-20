@@ -57,7 +57,7 @@ class Socket
                 ));
             }
         } else {
-            $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+            $this->socket = socket_create(AF_INET, SOCK_STREAM, getprotobyname("tcp"));
             if (!$this->socket) {
                 throw new MongoConnectionException(sprintf(
                     'error creating socket: %s',
