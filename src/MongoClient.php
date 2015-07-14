@@ -452,7 +452,7 @@ class MongoClient
     public function _getReadProtocol(array $readPreference)
     {
         $this->connect();
-        if (!$this->replSet) {
+        if (!$this->replSet || !$this->replSetStatus) {
             return reset($this->protocols);
         }
 
