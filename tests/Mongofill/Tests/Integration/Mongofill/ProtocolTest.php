@@ -1,8 +1,8 @@
 <?php
 
-namespace Mongofill\Tests\Mongofill;
+namespace Mongofill\Tests\Integration\Mongofill;
 
-use Mongofill\Tests\TestCase;
+use Mongofill\Tests\Integration\TestCase;
 use Mongofill\Protocol;
 use Mongofill\Socket;
 

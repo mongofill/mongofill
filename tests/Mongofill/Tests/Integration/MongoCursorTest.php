@@ -1,6 +1,6 @@
 <?php
 
-namespace Mongofill\Tests;
+namespace Mongofill\Tests\Integration;
 
 class MongoCursorTest extends TestCase
 {

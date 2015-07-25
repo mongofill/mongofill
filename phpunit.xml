@@ -6,8 +6,8 @@
         backupGlobals="false"
         >
     <testsuites>
-        <testsuite name="Mongofill Test Suite">
-            <directory>./tests/</directory>
+        <testsuite name="Mongofill Integration Test Suite">
+            <directory>./tests/Mongofill/Tests/Integration</directory>
         </testsuite>
     </testsuites>
 </phpunit>
