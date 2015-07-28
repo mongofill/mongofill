@@ -184,17 +184,10 @@ class MongoClient
             throw new MongoConnectionException('malformed uri: ' . $server);
         }
 
+
         foreach (explode(',', $serverPart) as $host_str) {
-            if (strpos($host_str, ':') !== false) {
-                list($host, $port) = explode(':', $host_str);
-            } else {
-                $host = $host_str;
-                $port = self::DEFAULT_PORT;
-            }
-            if (preg_match('/\A[a-zA-Z0-9_.\-]+\z/', $host)) {
-                $port = preg_match('/\A[0-9]+\z/', $port) ? $port : self::DEFAULT_PORT;
-                $this->hosts["$host:$port"] = ['host' => $host, 'port' => $port];
-            }
+            $host_parts = $this->parseHostString($host_str);
+            $this->hosts[$host_parts['hash']] = $host_parts;
         }
 
         if ($nsPart != null && strlen($nsPart) != 0) {// database
@@ -278,6 +271,26 @@ class MongoClient
     public function __get($dbname)
     {
         return $this->selectDB($dbname);
+    }
+
+    /**
+     * Given a host string, validate and parse it into hostname and port parts
+     *
+     * @param $host_str string - The host:port string
+     * @return array - In the form ['host' => $host, 'port' => $port, 'hash' => "$host:$port"]
+     *
+     * @throws MongoConnectionException - If the given $host_str is not valid
+     */
+    protected function parseHostString($host_str)
+    {
+        if (preg_match('/\A([a-zA-Z0-9_.-]+)(:([0-9]+))?\z/', $host_str, $matches)) {
+            $host = $matches[1];
+            $port = (isset($matches[3])) ? $matches[3] : static::DEFAULT_PORT;
+            if ($port > 0 && $port <= 65535) {
+                return array('host' => $host, 'port' => $port, 'hash' => "$host:$port");
+            }
+        }
+        throw new MongoConnectionException('malformed host string: ' . $host_str);
     }
 
     /**
