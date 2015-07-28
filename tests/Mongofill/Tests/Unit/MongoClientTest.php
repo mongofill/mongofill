@@ -12,8 +12,8 @@ class MongoClientTest extends TestCase
     public function testParseHostString($host, $expected)
     {
         $client = new MongoClient();
-        $reflectedClient = new \ReflectionClass ($client); // Testing a private method, use reflection
-        $method = $reflectedClient->getMethod ('parseHostString');
+        $reflectedClient = new \ReflectionClass($client); // Testing a private method, use reflection
+        $method = $reflectedClient->getMethod('parseHostString');
         $method->setAccessible(true);
         $output = $method->invoke ($client, $host);
         $this->assertEquals(array('host' => $expected[0], 'port' => $expected[1], 'hash' => $expected[2]), $output);

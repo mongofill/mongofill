@@ -10,7 +10,7 @@ class ProtocolTest extends TestCase
 {
     private function getProtocol()
     {
-        $socket = new Socket('localhost', 27017);
+        $socket = new Socket(static::$host, static::$port);
         $socket->connect();
 
         $proto = new Protocol($socket);
