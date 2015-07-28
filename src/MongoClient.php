@@ -294,6 +294,31 @@ class MongoClient
     }
 
     /**
+     * Disconnect and remove all protocols/sockets
+     */
+    protected function purgeAllProtocols()
+    {
+        return $this->purgeProtocols($this->protocols);
+    }
+
+    /**
+     * Disconnect and remove given list of protocols
+     *
+     * @param array $protocols - list of protocol objects to purge
+     */
+    protected function purgeProtocols(array $protocols)
+    {
+        foreach ($protocols as $protocol) {
+            $host = $protocol->getServerHash();
+            if (isset($this->sockets[$host])) {
+                $socket->disconnect();
+                unset($this->sockets[$host]);
+            }
+                unset($this->protocols[$host]);
+        }
+    }
+
+    /**
      * Connects to a database server or replica set
      *
      * @return bool - If the connection was successful.
@@ -437,10 +462,7 @@ class MongoClient
      */
     public function close($connection = null)
     {
-        foreach ($this->sockets as $socket) {
-            $socket->disconnect();
-        }
-        $this->protocols = [];
+        $this->purgeAllProtocols();
 
         //TODO: implement $connection handling
     }
