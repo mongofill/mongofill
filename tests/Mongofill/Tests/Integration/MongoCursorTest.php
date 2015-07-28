@@ -6,12 +6,14 @@ class MongoCursorTest extends TestCase
 {
     public function setUp()
     {
+        parent::setUp();
         $this->coll = $this->getTestDB()->selectCollection('MongoCursorTest');
     }
 
     public function tearDown()
     {
         $this->coll->drop();
+        parent::tearDown();
     }
 
     public function createNDocuments($n)
@@ -46,13 +48,29 @@ class MongoCursorTest extends TestCase
         $this->assertSame(1, end($result)['foo']);
     }
 
-    public function testFindWithExplain()
+    /**
+     * @group mongo24x
+     * @group mongo26x
+     */
+    public function testFindWithExplainMongo24x26x()
     {
         $this->createNDocuments(5);
         $cursor = $this->coll->find(['foo' => 2]);
 
         $explain = $cursor->explain();
         $this->assertArrayHasKey('n', $explain);
+    }
+
+    /**
+     * @group mongo30x
+     */
+    public function testFindWithExplainMongo30x()
+    {
+        $this->createNDocuments(5);
+        $cursor = $this->coll->find(['foo' => 2]);
+
+        $explain = $cursor->explain();
+        $this->assertArrayHasKey('queryPlanner', $explain);
     }
 
     public function testFindWithFields()
@@ -257,7 +275,6 @@ class MongoCursorTest extends TestCase
     {
         $query = ['foo' => 'bar'];
         $fields = ['foo' => 1];
-
         $info = $this->coll
             ->find($query, $fields)
             ->skip(1)

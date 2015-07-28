@@ -52,20 +52,20 @@ class MongoClientTest extends TestCase
 
     public function testServerOptionsDefault()
     {
-        $m = new MongoClient('mongodb://localhost:27017', []);
+        $m = new MongoClient(static::$conn_str, []);
         $this->assertInstanceOf('Mongofill\Protocol', $m->_getReadProtocol(['does not' => 'matter']));
         $this->assertInstanceOf('Mongofill\Protocol', $m->_getWriteProtocol());
     }
 
     public function testGetProtocolAutoConnect()
     {
-        $m = new MongoClient('mongodb://localhost:27017', ['connect' => false]);
+        $m = new MongoClient(static::$conn_str, ['connect' => false]);
         $this->assertInstanceOf('Mongofill\Protocol', $m->_getWriteProtocol());
     }
 
     public function testIpv4Address()
     {
-        $m = new MongoClient('mongodb://127.0.0.1:27017', []);
+        $m = new MongoClient(static::$conn_str, []);
         $this->assertInstanceOf('Mongofill\Protocol', $m->_getWriteProtocol());
     }
 
@@ -125,16 +125,16 @@ class MongoClientTest extends TestCase
 
     public function testGetHosts()
     {
-        $m = new MongoClient('mongodb://localhost:27017');
+        $m = new MongoClient(static::$conn_str);
         $hosts = $m->getHosts();
         $this->assertCount(1, $hosts);
-        $this->assertArrayHasKey('localhost:27017', $hosts);
-        $this->assertCount(7, $hosts['localhost:27017']);
+        $this->assertArrayHasKey(static::$server, $hosts);
+        $this->assertCount(7, $hosts[static::$server]);
 
-        $host = $hosts['localhost:27017'];
-        $this->assertEquals('localhost', $host['host']);
-        $this->assertEquals('27017', $host['port']);
-        $this->assertEquals('localhost:27017', $host['hash']);
+        $host = $hosts[static::$server];
+        $this->assertEquals(static::$host, $host['host']);
+        $this->assertEquals(static::$port, $host['port']);
+        $this->assertEquals(static::$server, $host['hash']);
         $this->assertEquals(1, $host['health']);
         $this->assertGreaterThan(0, $host['lastPing']);
     }

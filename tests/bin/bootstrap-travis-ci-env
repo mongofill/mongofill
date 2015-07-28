@@ -1,0 +1,244 @@
+#!/bin/bash
+
+set -e
+
+usage()
+{
+cat << EOF
+usage: $0 [-p basepath] [-v "mongodb version"] [-t] [-k]
+
+This script is used to setup a mongodb environment in Travis CI with a specific verison and includes a standalone
+server, as well as, optionally, a complete replSet with 5 members (1 Primary, 1 Secondary, 1 Tagged Secondary,
+1 Arbiter, and 1 Hidden) which are used by the integration tests.
+
+This script assumes Ubuntu 12.0.4 by x86 default as this is the environmet that Travis CI
+uses for its build containers. Passing -t will change the assumption to Ubuntu 14.0.4 Trusty.
+
+OPTIONS:
+   -h             Show this message
+   -p {path}      Base path to mongo install (defaults to current directory)
+   -v {version}   MongoDB version (minimum 2.7.3, "latest" for latest version)
+   -t             Switch to Ubuntu 14.0.4 Trusty x86 mode (only use this locally!)
+   -k             Kills any existing mongod instances (indiscriminately using \`pkill mongod\`)
+                  and removes the mongodb path set with the -p option (again, indiscriminately
+                  using \`rm -rf\`). Only use this if you know what the consequences may be.
+                  It's most often used while testing changes to this script.
+EOF
+}
+
+BASE_DIR=$(pwd)
+MONGODB_VERSION="latest"
+UBUNTU_VERSION="1204"
+KILL="false"
+while getopts “hp:v:tk” OPTION
+do
+     case $OPTION in
+         h)
+             usage
+             exit 0
+             ;;
+         p)
+             BASE_DIR=$OPTARG
+             ;;
+         v)
+             MONGODB_VERSION="$OPTARG"
+             ;;
+         t)
+             UBUNTU_VERSION="1404"
+             ;;
+         k)
+             KILL="true"
+             ;;
+         ?)
+             usage
+             exit 1
+             ;;
+     esac
+done
+
+if [[ $TRAVIS != "true" ]]; then
+    echo "This script is meant to run on Travis CI and, thus, makes assumptions about the environment. If you are sure you want to run this locally, run it with environment variable TRAVIS=true. Read the source first!"
+    exit 1
+fi
+
+MONGO_DIR=$BASE_DIR/.mongodb
+
+if [ "$KILL" == "true" ]; then
+    echo "Killing existing mongodb servers (pkill mongod)"
+    pkill mongod || true
+    echo "Waiting 5 seconds..."
+    sleep 5
+    echo "Removing $MONGO_DIR"
+    rm -rf $MONGO_DIR
+    echo "Cleanup complete. Continuing..."
+fi
+mkdir -p $MONGO_DIR
+
+MONGO_BIN_DIR=$MONGO_DIR/bin
+
+# If our version is < 2.7.2 there are no downloadable binaries available so we'll hope it's in apt. No guarantees.
+# We can't run `apt-get update` in Travis unless we want to lose the ability to use containers. Which
+# we don't for speed purposes.
+#
+# Note: This uses a very naive comparison and won't work without a 3 part version number (ie: MAJOR.MINOR.REVISION) or with rc versions (eg: 3.0.4rc1)!
+
+VERSION_AS_INT=$(echo "$MONGODB_VERSION" | tr -d .)
+if [[ $VERSION_AS_INT < 272 && $MONGODB_VERSION != "latest" ]]; then
+    (
+        PACKAGE_DIR=$MONGO_DIR/deb
+        mkdir -p $PACKAGE_DIR
+        mkdir -p $MONGO_BIN_DIR
+        cd $PACKAGE_DIR
+
+        if [[ $VERSION_AS_INT < 260 ]]; then
+            apt-get download mongodb-10gen=${MONGODB_VERSION}
+            dpkg -x $PACKAGE_DIR/mongodb-10gen*.deb $PACKAGE_DIR/extracted
+        else
+            apt-get download mongodb-org-server=${MONGODB_VERSION} mongodb-org-shell=${MONGODB_VERSION}
+            dpkg -x $PACKAGE_DIR/mongodb-org-server*.deb $PACKAGE_DIR/extracted
+            dpkg -x $PACKAGE_DIR/mongodb-org-shell*.deb $PACKAGE_DIR/extracted
+        fi
+
+        mv $PACKAGE_DIR/extracted/usr/bin/mongod  $MONGO_BIN_DIR
+        mv $PACKAGE_DIR/extracted/usr/bin/mongo  $MONGO_BIN_DIR
+    )
+else
+    MONGO_TARFILE=$MONGO_DIR/mongo.tgz
+    REMOTE_TARFILE="http://downloads.mongodb.org/linux/mongodb-linux-x86_64-ubuntu${UBUNTU_VERSION}-${MONGODB_VERSION}.tgz"
+    curl "$REMOTE_TARFILE" -o "$MONGO_TARFILE"
+    tar -xf $MONGO_TARFILE -C $MONGO_DIR --strip-components 1
+fi
+
+
+mongod=$MONGO_DIR/bin/mongod
+mongo=$MONGO_DIR/bin/mongo
+
+# Setup port defaults (for ones not set by ENV):
+: ${MONGODB_STANDALONE_PORT:=27017}
+: ${MONGODB_REPLSET_PRIMARY_PORT:=27020}
+: ${MONGODB_REPLSET_SECONDARY_PORT:=27023}
+: ${MONGODB_REPLSET_SECONDARY_TAGGED_PORT:=27026}
+: ${MONGODB_REPLSET_HIDDEN_PORT:=27029}
+: ${MONGODB_REPLSET_ARBITER_PORT:=27032}
+
+# Setup data directories
+rm -rf ${MONGO_DIR}/data
+MONGODB_BASE_DBPATH=${MONGO_DIR}/data
+
+REPLSET_NAME="mongofill"
+
+# Start our servers
+start_server() {
+    port=$2
+    dbpath=$MONGODB_BASE_DBPATH/$1
+    mkdir -p $dbpath
+    start_cmd="$mongod --port $port --dbpath $dbpath --nojournal --fork --syslog"
+    if [ -z "$3" ]; then
+        start_cmd="$start_cmd --replSet $REPLSET_NAME"
+    fi
+
+    $start_cmd
+}
+
+
+# Start basic server (for core tests)
+start_server standalone $MONGODB_STANDALONE_PORT "false"
+
+# Start replSet (1 primary, 1 normal seconary, 1 tagged secondary, 1 hidden secondary, 1 arbierh)
+start_server primary $MONGODB_REPLSET_PRIMARY_PORT
+start_server secondary $MONGODB_REPLSET_SECONDARY_PORT
+start_server secondary_tagged $MONGODB_REPLSET_SECONDARY_TAGGED_PORT
+start_server hidden $MONGODB_REPLSET_HIDDEN_PORT
+start_server arbiter $MONGODB_REPLSET_ARBITER_PORT
+
+# Configure replSet (|| true is to get around read's non-zero exit status with heredoc)j
+read -r -d '' repl_config <<EOF || true
+use local;
+rs.initiate({
+    "_id" : "${REPLSET_NAME}",
+    "members" : [{
+    "_id" : 0,
+    "host" : "localhost:${MONGODB_REPLSET_PRIMARY_PORT}",
+    "arbiterOnly" : false,
+    "buildIndexes" : true,
+    "hidden" : false,
+    "priority" : 1,
+    "slaveDelay" : 0,
+    "votes" : 1
+},{
+    "_id" : 1,
+    "host" : "localhost:${MONGODB_REPLSET_SECONDARY_PORT}",
+    "arbiterOnly" : false,
+    "buildIndexes" : true,
+    "hidden" : false,
+    "priority" : .5,
+    "slaveDelay" : 0,
+    "votes" : 1
+},{
+    "_id" : 2,
+    "host" : "localhost:${MONGODB_REPLSET_SECONDARY_TAGGED_PORT}",
+    "arbiterOnly" : false,
+    "buildIndexes" : true,
+    "hidden" : false,
+    "priority" : .5,
+    "slaveDelay" : 0,
+    "votes" : 1,
+    "tags": {
+        "tag-test": "tagged"
+    }
+},{
+    "_id" : 3,
+    "host" : "localhost:${MONGODB_REPLSET_HIDDEN_PORT}",
+    "arbiterOnly" : false,
+    "buildIndexes" : true,
+    "hidden" : true,
+    "priority" : 0,
+    "slaveDelay" : 0,
+    "votes" : 1,
+    "tags": {
+        "tag-test": "hidden"
+    }
+},{
+    "_id" : 4,
+    "host" : "localhost:${MONGODB_REPLSET_ARBITER_PORT}",
+    "arbiterOnly" : true,
+    "priority" : 0,
+    "slaveDelay" : 0,
+    "votes" : 1
+}]});
+EOF
+
+sleep 5 # Make sure each MongoDB instance has enough time to ready itself before we add the replset configuration:
+$mongo --port $MONGODB_REPLSET_PRIMARY_PORT <<<  """$repl_config"""
+
+# Now let's wait until the replset is online and ready
+tries="0"
+online="false"
+
+OK_REGEXP='"ok" : 1'
+STATUS_REGEXP='"stateStr" : "(UNKNOWN|STARTUP2?|RECOVERING)"'
+SLEEP_SECONDS="5"
+MAX_TRIES="18" # 18 * 5 = 90 seconds total
+
+echo "Waiting for replSet to come online..."
+while [ $tries -lt $MAX_TRIES ]; do
+    status=$($mongo --host localhost:$MONGODB_REPLSET_PRIMARY_PORT --eval 'printjson(rs.status())')
+
+    if [[ $status =~ $OK_REGEXP ]] && ! [[ $status =~ $STATUS_REGEXP ]]; then
+        echo "ReplSet is online"
+        online="true"
+        break
+    fi
+    echo "ReplSet still not online. Trying again in 5 seconds..."
+    sleep 5
+    tries=$[$tries+1]
+done
+
+if [[ $online == "false" ]]; then
+    echo "ReplSet did not come up within 90 seconds. CI tests may fail; aborting without cleanup."
+    exit 1
+fi
+
+# All done
+echo "Finished setting up MongoDB Test Environment. Version: ${MONGODB_VERSION}"
+
