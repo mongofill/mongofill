@@ -129,11 +129,12 @@ class MongoClientTest extends TestCase
         $hosts = $m->getHosts();
         $this->assertCount(1, $hosts);
         $this->assertArrayHasKey('localhost:27017', $hosts);
-        $this->assertCount(6, $hosts['localhost:27017']);
+        $this->assertCount(7, $hosts['localhost:27017']);
 
         $host = $hosts['localhost:27017'];
         $this->assertEquals('localhost', $host['host']);
         $this->assertEquals('27017', $host['port']);
+        $this->assertEquals('localhost:27017', $host['hash']);
         $this->assertEquals(1, $host['health']);
         $this->assertGreaterThan(0, $host['lastPing']);
     }
