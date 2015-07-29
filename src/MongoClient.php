@@ -126,7 +126,7 @@ class MongoClient
      */
     public function __construct($server = 'mongodb://localhost:27017', array $options = ['connect' => true])
     {
-        if (!$server || strpos($server, 'mongodb://') != 0) {
+        if (!$server || strpos($server, 'mongodb://') !== 0) {
             throw new MongoConnectionException('malformed uri: ' . $server);
         }
 
