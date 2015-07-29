@@ -1,8 +1,8 @@
 <?php
 
-namespace Mongofill\Tests\Integration\Mongofill;
+namespace Mongofill\Tests\Integration\Standalone\Mongofill;
 
-use Mongofill\Tests\Integration\TestCase;
+use Mongofill\Tests\Integration\Standalone\TestCase;
 use Mongofill\Bson;
 use MongoInt32;
 use MongoBinData;

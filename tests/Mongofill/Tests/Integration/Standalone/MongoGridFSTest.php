@@ -1,12 +1,12 @@
 <?php
 
-namespace Mongofill\Tests\Integration;
+namespace Mongofill\Tests\Integration\Standalone;
 
 use MongoGridFS;
 
 class MongoGridFSTest extends TestCase
 {
-    const EXAMPLE_BIN_FILE = '/../../../resources/MongoGridFS/example.png';
+    const EXAMPLE_BIN_FILE = '/../../../../resources/MongoGridFS/example.png';
 
     public function setUp()
     {

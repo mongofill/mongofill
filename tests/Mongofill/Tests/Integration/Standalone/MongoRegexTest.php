@@ -1,6 +1,6 @@
 <?php
 
-namespace Mongofill\Tests\Integration;
+namespace Mongofill\Tests\Integration\Standalone;
 
 use MongoRegex;
 
