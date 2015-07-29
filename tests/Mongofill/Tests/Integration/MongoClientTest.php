@@ -17,6 +17,14 @@ class MongoClientTest extends TestCase
     /**
      * @expectedException MongoConnectionException
      */
+    public function testInvalidProtocol()
+    {
+        $m = new MongoClient('foo://localhost', ['connect' => false]);
+    }
+
+    /**
+     * @expectedException MongoConnectionException
+     */
     public function testMissingTrailingSlash()
     {
         $m = new MongoClient('mongodb://foo?wtimeoutms=500', ['connect' => false]);
