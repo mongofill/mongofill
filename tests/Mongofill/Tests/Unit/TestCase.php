@@ -1,13 +1,12 @@
 <?php
 
-namespace Mongofill\Tests;
+namespace Mongofill\Tests\Unit;
 
 use PHPUnit_Framework_TestCase;
 use MongoClient;
 
 abstract class TestCase extends PHPUnit_Framework_TestCase
 {
-    const TEST_DB = 'mongofill-test';
 
     /**
      * @var MongoClient
@@ -17,12 +16,10 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
     protected function setUp()
     {
         parent::setUp();
-        $this->getTestDB()->drop();
     }
 
     protected function tearDown()
     {
-        $this->testClient = null;
         parent::tearDown();
     }
 
@@ -35,13 +32,5 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
             $this->testClient = new MongoClient();
         }
         return $this->testClient;
-    }
-
-    /**
-     * @return \MongoDB
-     */
-    public function getTestDB()
-    {
-        return $this->getTestClient()->selectDB(self::TEST_DB);
     }
 }

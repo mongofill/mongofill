@@ -1,8 +1,8 @@
 <?php
 
-namespace Mongofill\Tests\Mongofill;
+namespace Mongofill\Tests\Integration\Standalone\Mongofill;
 
-use Mongofill\Tests\TestCase;
+use Mongofill\Tests\Integration\Standalone\TestCase;
 use Mongofill\Protocol;
 use Mongofill\Socket;
 
@@ -10,7 +10,7 @@ class ProtocolTest extends TestCase
 {
     private function getProtocol()
     {
-        $socket = new Socket('localhost', 27017);
+        $socket = new Socket(static::$host, static::$port);
         $socket->connect();
 
         $proto = new Protocol($socket);

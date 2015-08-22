@@ -650,8 +650,11 @@ class MongoCollection
         $cmd = [
             'distinct' => $this->name,
             'key' => $key,
-            'query' => $query
         ];
+
+        if (!empty($query)) {
+            $cmd['query'] = $query;
+        }
 
         $results = $this->db->command($cmd);
         if (!isset($results['values'])) {

@@ -5,9 +5,24 @@
         colors="true"
         backupGlobals="false"
         >
+     <groups>
+         <include>
+             <!--
+                  By default our tests assumes a standalone MongoDB 2.4.x instance running on port 27017
+                  will be used. It will not run replset tests. Use list-groups to see all available
+                  groups to fit your testing environment. The mongoxxx groups are only relevant for
+                  the Integration Test Suite.
+             -->
+            <group>__nogroup__</group>
+            <group>mongo24x</group>
+        </include>
+    </groups>
     <testsuites>
-        <testsuite name="Mongofill Test Suite">
-            <directory>./tests/</directory>
+        <testsuite name="unit">
+            <directory>./tests/Mongofill/Tests/Unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>./tests/Mongofill/Tests/Integration</directory>
         </testsuite>
     </testsuites>
 </phpunit>

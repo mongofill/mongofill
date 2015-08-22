@@ -1,15 +1,42 @@
 language: php
 
+sudo: false
+
 php:
   - 5.4
   - 5.5
   - 5.6
   - hhvm
 
-services: mongodb
+env:
+  global:
+    - MONGODB_STANDALONE_PORT=27017
+    - MONGODB_REPLSET_PRIMARY_PORT=27020
+    - MONGODB_REPLSET_SECONDARY_PORT=27023
+    - MONGODB_REPLSET_SECONDARY_TAGGED_PORT=27026
+    - MONGODB_REPLSET_HIDDEN_PORT=27029
+    - MONGODB_REPLSET_ARBITER_PORT=27032
+
+  matrix:
+    - MONGODB_VERSION=2.4.10 ADDL_TEST_GROUPS="mongo24x"
+    #- MONGODB_VERSION=2.6.9 ADDL_TEST_GROUPS="mongo26x" # Travis CI Containers do not have the mongodb-org repo whitelisted yet and there are no directly downloadable binaries for versions < 2.7.2
+    - MONGODB_VERSION=3.0.4 ADDL_TEST_GROUPS="mongo30x"
+    - MONGODB_VERSION=latest ADDL_TEST_GROUPS="mongo30x"
+
+matrix:
+  allow_failures:
+    - env: MONGODB_VERSION=latest ADDL_TEST_GROUPS="mongo30x"
+  fast_finish: true
+
+before_install:
+  - $TRAVIS_BUILD_DIR/tests/bin/bootstrap-travis-ci-env -p $TRAVIS_BUILD_DIR -v $MONGODB_VERSION
+  - $TRAVIS_BUILD_DIR/.mongodb/bin/mongo --version
 
 before_script:
   - composer install --dev --no-interaction --prefer-source
+
+script:
+  - $TRAVIS_BUILD_DIR/vendor/bin/phpunit --group __nogroup__,replset,$ADDL_TEST_GROUPS --coverage-text
 
 notifications:
   irc:

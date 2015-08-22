@@ -26,6 +26,15 @@ class MongoClient
     const DEFAULT_CONNECT_TIMEOUT_MS = 60000;
     const REPL_SET_CACHE_LIFETIME = 15; // in seconds
 
+    const STATE_STARTUP = 0;
+    const STATE_PRIMARY = 1;
+    const STATE_SECONDARY = 2;
+
+    const STATE_STR_PRIMARY = 'PRIMARY';
+    const STATE_STR_SECONDARY = 'SECONDARY';
+
+    const HEALTHY = 1;
+
     /**
      * @var boolean
      */
@@ -117,6 +126,14 @@ class MongoClient
     private $connectTimeoutMS;
 
     /**
+     * Holds a reference to the PRIMARY connection for replSet connections once it
+     * has been established
+     *
+     * @var Mongofill\Protocol
+     */
+    private $primaryProtocol;
+
+    /**
      * Creates a new database connection object
      *
      * @param string $server - The server name. server should have the form:
@@ -126,7 +143,7 @@ class MongoClient
      */
     public function __construct($server = 'mongodb://localhost:27017', array $options = ['connect' => true])
     {
-        if (!$server || strpos($server, 'mongodb://') != 0) {
+        if (!$server || strpos($server, 'mongodb://') !== 0) {
             throw new MongoConnectionException('malformed uri: ' . $server);
         }
 
@@ -184,17 +201,10 @@ class MongoClient
             throw new MongoConnectionException('malformed uri: ' . $server);
         }
 
+
         foreach (explode(',', $serverPart) as $host_str) {
-            if (strpos($host_str, ':') !== false) {
-                list($host, $port) = explode(':', $host_str);
-            } else {
-                $host = $host_str;
-                $port = self::DEFAULT_PORT;
-            }
-            if (preg_match('/\A[a-zA-Z0-9_.\-]+\z/', $host)) {
-                $port = preg_match('/\A[0-9]+\z/', $port) ? $port : self::DEFAULT_PORT;
-                $this->hosts["$host:$port"] = ['host' => $host, 'port' => $port];
-            }
+            $host_parts = $this->parseHostString($host_str);
+            $this->hosts[$host_parts['hash']] = $host_parts;
         }
 
         if ($nsPart != null && strlen($nsPart) != 0) {// database
@@ -281,6 +291,183 @@ class MongoClient
     }
 
     /**
+     * Given a host string, validate and parse it into hostname and port parts
+     *
+     * @param $host_str string - The host:port string
+     * @return array - In the form ['host' => $host, 'port' => $port, 'hash' => "$host:$port"]
+     *
+     * @throws MongoConnectionException - If the given $host_str is not valid
+     */
+    protected function parseHostString($host_str)
+    {
+        if (preg_match('/\A([a-zA-Z0-9_.-]+)(:([0-9]+))?\z/', $host_str, $matches)) {
+            $host = $matches[1];
+            $port = (isset($matches[3])) ? $matches[3] : static::DEFAULT_PORT;
+            if ($port > 0 && $port <= 65535) {
+                return array('host' => $host, 'port' => $port, 'hash' => "$host:$port");
+            }
+        }
+        throw new MongoConnectionException('malformed host string: ' . $host_str);
+    }
+
+    /**
+     * For a replset, we need to connect to the first active host in our seed list and then
+     * ask the replset for its list of valid hosts. This list will be pre-filtered of any hidden
+     * members including arbiters. This is the host list we will use moving forward.
+     */
+    protected function retrieveReplSetHosts()
+    {
+        if (!$this->replSet) {
+            throw new MongoConnectionException("Cannot retrieve replication set host list. Connection not configured as a replSet connection.");
+        }
+
+        $protocol = $this->connectToFirstAvailableHost();
+
+        $is_master =  $this->selectDB('admin')->command([
+            'isMaster' => 1,
+        ], [
+            'protocol' => $protocol // Explicitly use this host so we don't mess up caching with read/write protocol functions while we're still bootstrapping
+        ]);
+
+        if (!isset($is_master['setName']) || $is_master['setName'] != $this->replSet) {
+            throw new MongoConnectionException("Could not ascertain replSet information from seed host ({$protocol->getServerHash()}). Are you sure this host is configured as a member of replset: '{$this->replSet}'?");
+        }
+
+        $hosts = [];
+        $replset_hosts = isset($is_master['hosts']) ? $is_master['hosts'] : array();
+        $replset_passive_hosts = isset($is_master['passive']) ? $is_master['passive'] : array();
+        $all_hosts = array_merge($replset_hosts, $replset_passive_hosts);
+        foreach ($all_hosts as $host_str) {
+            $host_parts = $this->parseHostString($host_str);
+            if ($host_str === $is_master['primary']) {
+                $host_parts['state'] = static::STATE_PRIMARY;
+            } else {
+                $host_parts['state'] = static::STATE_STARTUP;
+            }
+            $hosts[$host_parts['hash']] = $host_parts;
+        }
+
+        return $hosts;
+    }
+
+    /**
+     * Disconnect and remove all protocols/sockets
+     */
+    protected function purgeAllProtocols()
+    {
+        return $this->purgeProtocols($this->protocols);
+    }
+
+    /**
+     * Disconnect and remove given list of protocols
+     *
+     * @param array $protocols - list of protocol objects to purge
+     */
+    protected function purgeProtocols(array $protocols)
+    {
+        foreach ($protocols as $protocol) {
+            $host = $protocol->getServerHash();
+            if (isset($this->sockets[$host])) {
+                $socket->disconnect();
+                unset($this->sockets[$host]);
+            }
+                unset($this->protocols[$host]);
+        }
+    }
+    /**
+     * Iterates through configured hosts array attempting to connect to each. Returns as soon as
+     * a successful connection is made. If no connection can be established, throw an exception.
+     *
+     * @return Mongofill/Protocol
+     * @throws MongoConnectionException
+     */
+    private function connectToFirstAvailableHost()
+    {
+        if (count($this->protocols) > 0) {
+            return reset($this->protocols);
+        }
+
+
+        $latest_error = null;
+        foreach ($this->hosts as $host_key => &$host_info) {
+            try {
+                $protocol = $this->connectToHost($host_info['host'], $host_info['port']);
+                // We were able to connect, so update host status
+                $host_info['health'] = static::HEALTHY; // assume healthy since we connected
+                $host_info['state'] = static::STATE_STARTUP; // Default to unknown
+                return $protocol;
+            } catch (MongoConnectionException $e) {
+                $latest_error = $e;
+                continue;
+            }
+        }
+
+        $msg = "Could not connect to any of " . count($this->hosts) .
+            " hosts. Latest error: " . ($latest_error ? $latest_error->getMessage() : '');
+        throw new MongoConnectionException($msg);
+    }
+
+    /**
+     * Returns a connection the PRIMARY member of the current host list.
+     *
+     * @return Mongofill/Protocol
+     */
+    private function connectToReplSetPrimary()
+    {
+        if ($this->primaryProtocol) {
+            return $this->primaryProtocol;
+        }
+
+        // Replace the seed host list with the correct host list from the replSet itself
+        // TODO: Chicken/egg problem. We should really be getting this list *from* the PRIMARY.
+        //       The MongoDB driver specification docs suggest, perhaps, doing a second query
+        //       to make sure the PRIMARY believes it is the PRIMARY and to verify the host
+        //       list, but I'm not sure if we should spend the IO time on that second call.
+        $this->hosts = $this->retrieveReplSetHosts();
+
+        foreach ($this->hosts as $host_info) {
+            if (isset($host_info['state']) && $host_info['state'] === static::STATE_PRIMARY) {
+                $this->primaryProtocol = $this->connectToHost($host_info['host'], $host_info['port']);
+                return $this->primaryProtocol;
+            }
+        }
+
+        throw new \MongoException("Could not determine PRIMARY member from replSet host list.");
+    }
+
+    /**
+     * Attempts to connect to the MongoDB replSet and retrieve the replSet status,
+     * updating the host list with the proper host list from the replSet isMaster()
+     * command.
+     */
+    private function connectToReplSet()
+    {
+        $repl_set_info = $this->getReplSetInfo(); // Get replset info from the PRIMARY
+
+        // This will fail to get info if server is not using a replica set, but that's fine
+        if ($repl_set_info['ok'] != 1 || !$repl_set_info['retval']['conf'] || !$repl_set_info['retval']['status']) {
+            // If we're trying to use a replica set, this is fatal
+            $msg = "Unable to get replica set config & status for host $host";
+            throw new MongoConnectionException($msg);
+        } else {
+            $prunedMembers = array();
+            foreach ($repl_set_info['retval']['status']['members'] as $member) {
+                // We only care about hosts in our host list which have already have been updated
+                // with the valid list from isMaster() and won't include arbiters/hidden members
+                if (isset($this->hosts[$member['name']])) {
+                    $this->hosts[$member['name']]['health'] = $member['health'];
+                    $this->hosts[$member['name']]['state'] = $member['state'];
+                    $prunedMembers[] = $member;
+                }
+            }
+            // We don't care about members that aren't part of our host list as we can't read from or write to them
+            $repl_set_info['retval']['status']['members'] = $prunedMembers;
+            $this->replSetStatus = $repl_set_info['retval']['status'];
+            $this->replSetConf = $repl_set_info['retval']['conf'];
+        }
+    }
+
+    /**
      * Connects to a database server or replica set
      *
      * @return bool - If the connection was successful.
@@ -292,118 +479,84 @@ class MongoClient
             return true;
         }
 
-        $latest_error = null;
-        foreach ($this->hosts as $host_key => $host_info) {
-            try {
-                $this->connectToHost($host_info['host'], $host_info['port']);
-            } catch (MongoConnectionException $e) {
-                // We can tolerate connection failures as long as at least 1 succeeds
-                $latest_error = $e;
-                continue;
-            }
-
-            // We were able to connect, so update host status
-            $this->hosts[$host_key]['health'] = 1; // assume healthy since we connected
-            $this->hosts[$host_key]['state'] = 0; // Default to unknown
-
-            if ($this->replSet) {
-                $repl_set_info = $this->getReplSetInfo($host_key);
-
-                // This will fail to get info if server is not using a replica set, but that's fine
-                if ($repl_set_info['ok'] != 1 || !$repl_set_info['retval']['conf'] || !$repl_set_info['retval']['status']) {
-                    // If we're trying to use a replica set, this is fatal
-                    $msg = "Unable to get replica set config & status for host $host_key";
-                    throw new MongoConnectionException($msg);
-                } else {
-                    $this->replSetConf = $repl_set_info['retval']['conf'];
-                    $this->replSetStatus = $repl_set_info['retval']['status'];
-                    foreach ($this->replSetStatus['members'] as $member) {
-                        if ($member['stateStr'] === 'ARBITER') {
-                            continue;
-                        }
-                        // If this member is the one we are already connected to, save the status
-                        // information under the original host:port combo, which might be different
-                        // than what is listed in the replica set config
-                        if (isset($member['self']) && $member['self'] === true) {
-                            $this->hosts[$host_key]['health'] = $member['health'];
-                            $this->hosts[$host_key]['state'] = $member['state'];
-                        }
-                        list($host, $port) = explode(':', $member['name']);
-                        $this->hosts[$member['name']] = [
-                            'host' => $host,
-                            'port' => $port,
-                            'health' => $member['health'],
-                            'state' => $member['state'],
-                        ];
-                    }
-                }
-            }
-
-            break;
+        if ($this->replSet) {
+            $this->connectToReplSet();
+        } else {
+            $this->connectToFirstAvailableHost();
         }
 
-        if (!$this->protocols) {
-            $msg = "Could not connect to any of " . count($this->hosts) .
-                " hosts. Latest error: " . ($latest_error ? $latest_error->getMessage() : '');
-            throw new MongoConnectionException($msg);
-        }
-
-        $this->connected = true;
-
-        return true;
+        return $this->connected = true;
     }
 
     /**
      * Establish a connection to specified host if not already connected to it
      * @param $host
      * @param $port
+     *
+     * @return Mongofill\Protocol - The protocol for the given connection parameters
      */
     private function connectToHost($host, $port)
     {
         $host_key = "$host:$port";
+
         if (!isset($this->protocols[$host_key])) {
             if (!isset($this->sockets[$host_key])) {
                 $this->sockets[$host_key] = new Socket($host, $port, $this->connectTimeoutMS);
                 $this->sockets[$host_key]->connect();
             }
+
             $this->protocols[$host_key] = new Protocol($this->sockets[$host_key]);
 
             if ($this->database != null) {
                 $db = $this->selectDB($this->database);
 
                 if ($this->username != null) {
-                    return $db->authenticate($this->username, $this->password, [
+                    $db->authenticate($this->username, $this->password, [
                         'protocol' => $this->protocols[$host_key],
                     ]);
                 }
             }
         }
+
+        return $this->protocols[$host_key];
     }
 
     /**
-     * Get an array with replica set config and status for a given host.
+     * Get an array with replica set config and status for the current PRIMARY.
      * This will be cached in APC (if available) for up to REPL_SET_CACHE_LIFETIME
      * seconds, so servers are not spammed with getReplSetStatus calls, which appear
      * to really slow down a MongoDB server when they happen frequently.
-     * @param $host_key
+     *
      * @return array
      */
-    private function getReplSetInfo($host_key)
+    private function getReplSetInfo()
     {
-        $cache_key = "mongofill:replSetInfo:$host_key:".__FILE__;
+        $primary_protocol = $this->connectToReplSetPrimary(); // Make sure we have a conection to the PRIMARY
+
+        $cache_key = "mongofill:replSetInfo:{$primary_protocol->getServerHash()}:".__FILE__;
         $result = MONGOFILL_USE_APC ? apc_fetch($cache_key) : false;
+
         if (!$result) {
-            // We must use a raw opQuery here because MongoDB::command cannot be used
-            // until the replica set info has been initialized
+            // Temporarily enforce PRIMARY read because we need this collection to come from  the
+            // PRIMARY server which we have already established a connection to.
+            $configured_read_preference = $this->getReadPreference();
+            $this->setReadPreference(static::RP_PRIMARY);
+            $conf  = $this->selectDB('local')->selectCollection('system.replset')->findOne();
+            $this->readPreference = $configured_read_preference; // Set our RP back directly, bypass setReadPreference()
+
+            // This will use the write protocol which is already established as the PRIMARY
+            $status = $this->selectDB('admin')->command([
+                'replSetGetStatus' => 1,
+            ]);
+
             $result = [
                 'ok' => 1,
                 'retval' => [
-                    'conf' => $this->selectDB('local')->selectCollection('system.replset')->findOne(),
-                    'status' => $this->selectDB('admin')->command([
-                        'replSetGetStatus' => 1,
-                    ]),
+                    'conf' => $conf,
+                    'status' => $status,
                 ],
             ];
+
             if (MONGOFILL_USE_APC) {
                 apc_store($cache_key, $result, self::REPL_SET_CACHE_LIFETIME);
             }
@@ -424,10 +577,7 @@ class MongoClient
      */
     public function close($connection = null)
     {
-        foreach ($this->sockets as $socket) {
-            $socket->disconnect();
-        }
-        $this->protocols = [];
+        $this->purgeAllProtocols();
 
         //TODO: implement $connection handling
     }
@@ -435,22 +585,19 @@ class MongoClient
     public function _getWriteProtocol()
     {
         $this->connect();
-        if (!$this->replSet || !isset($this->replSetStatus['members'])) {
+        if (!$this->replSet) {
             return reset($this->protocols);
         }
-        foreach ($this->replSetStatus['members'] as $member) {
-            if ($member['stateStr'] === 'PRIMARY') {
-                $host_key = $member['name'];
-                list($host, $port) = explode(':', $host_key);
-                $this->connectToHost($host, $port);
-                return $this->protocols[$host_key];
-            }
-        }
-        throw new MongoConnectionException("No PRIMARY found in replica set");
+
+        return $this->connectToReplSetPrimary();
     }
 
-    public function _getReadProtocol(array $readPreference)
+    public function _getReadProtocol(array $readPreference = array())
     {
+        if(empty($readPreference)) {
+            $readPreference = $this->getReadPreference();
+        }
+
         $this->connect();
         if (!$this->replSet) {
             return reset($this->protocols);
@@ -475,23 +622,22 @@ class MongoClient
                 }
 
             case self::RP_SECONDARY:
-                return $cache[$cache_key] = $this->getNearestHostProtocol(['SECONDARY'], $readPreference);
+                return $cache[$cache_key] = $this->getNearestHostProtocol([static::STATE_STR_SECONDARY], $readPreference);
 
             case self::RP_SECONDARY_PREFERRED:
                 try {
-                    return $cache[$cache_key] = $this->getNearestHostProtocol(['SECONDARY'], $readPreference);
+                    return $cache[$cache_key] = $this->getNearestHostProtocol([static::STATE_STR_SECONDARY], $readPreference);
                 } catch (MongoConnectionException $e) {
                     return $cache[$cache_key] = $this->_getWriteProtocol();
                 }
 
             case self::RP_NEAREST:
-                return $cache[$cache_key] = $this->getNearestHostProtocol(['PRIMARY', 'SECONDARY'], $readPreference);
+                return $cache[$cache_key] = $this->getNearestHostProtocol([static::STATE_STR_PRIMARY, static::STATE_STR_SECONDARY], $readPreference);
 
             default:
-                throw new Exception("Invalid read preference ({$readPreference['type']}");
+                throw new MongoConnectionException("Invalid read preference ({$readPreference['type']}");
         }
     }
-
     /**
      * Get a Protocol for the nearest candidate server matching the given types
      * and read preference. This implements Member Selection as described here:
@@ -536,8 +682,16 @@ class MongoClient
             }
             if ($this->hosts[$host_key]['ping'] < $min_ping) {
                 $min_ping = $this->hosts[$host_key]['ping'];
+                $min_ping_host_key = $host_key;
             }
         }
+
+        // If we have a NEAREST read preference, always return the host with the least latency
+        if ($readPreference['type'] === static::RP_NEAREST && isset($min_ping_host_key)) {
+            return $this->protocols[$min_ping_host_key];
+        }
+
+        // Otherwise:
 
         // Filter candidates to only those within the "nearest group" (default 15ms)
         $candidates = array_values(array_filter($candidates, function ($member) use ($min_ping) {
