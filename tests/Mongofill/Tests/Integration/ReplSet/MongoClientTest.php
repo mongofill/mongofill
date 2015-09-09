@@ -66,6 +66,10 @@ class MongoClientTest extends TestCase
         $this->assertEquals(static::$primary_server, $protocol->getServerHash());
     }
 
+    // TODO: Due to the complex nature of logic for read preference cascading, these tests need to
+    //       be altered to do actual queries to ensure the proper read preference is used at the
+    //       cursor level.
+    
     public function testReadPreferencePrimary()
     {
         $m = $this->getTestClient(['readPreference' => MongoClient::RP_PRIMARY]);
