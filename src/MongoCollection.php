@@ -146,7 +146,12 @@ class MongoCollection
      */
     public function find(array $query = [], array $fields = [])
     {
-        return new MongoCursor($this->client, $this->fqn, $query, $fields);
+        $cursor =  new MongoCursor($this->client, $this->fqn, $query, $fields);
+        $rp = $this->readPreference['type'];
+        $tags = (isset($this->readPreference['tagsets'])) ? $this->readPreference['tagsets'] : [];
+        // Ensure any read preference overrides are cascaded
+        $cursor->setReadPreference($rp, $tags);
+        return $cursor;
     }
 
     /**
