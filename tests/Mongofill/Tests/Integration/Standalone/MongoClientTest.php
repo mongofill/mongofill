@@ -77,6 +77,12 @@ class MongoClientTest extends TestCase
         $this->assertInstanceOf('Mongofill\Protocol', $m->_getWriteProtocol());
     }
 
+    public function testDropDB()
+    {
+        $result = $this->getTestClient()->dropDB(self::TEST_DB);
+        $this->assertTrue(array_key_exists('ok', $result));
+    }
+
     public function testKillCursor()
     {
         $data = [
