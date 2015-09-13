@@ -6,10 +6,7 @@ use MongoClient;
 
 class MongoClientTest extends TestCase
 {
-    /**
-     * @expectedException MongoConnectionException
-     */
-    public function testInvalidURI()
+    public function testValidURI()
     {
         $m = new MongoClient('foo', ['connect' => false]);
     }
