@@ -53,6 +53,9 @@ class MongoId implements \Serializable
         if (null === $id) {
             $id = $this->generateId();
         } elseif (self::isValid($id)) {
+            if (get_class($id) == self::class) {
+                $id = $id->__toString();
+            }
             $this->disassembleId($id);
         } else {
             throw new MongoException('Invalid object ID', 19);
@@ -178,13 +181,15 @@ class MongoId implements \Serializable
      *   string consisting of exactly 24 hexadecimal characters; otherwise,
      *   FALSE is returned.
      */
-    public static function isValid($id)
+    public static function isValid($value)
     {
-        if (!is_string($id)) {
+        if (get_class($value) == self::class) {
+            return true;
+        } else if (!is_string($value)) {
             return false;
         }
 
-        return preg_match('/[0-9a-fA-F]{24}/', $id);
+        return preg_match('/^[0-9a-fA-F]{24}$/', $value);
     }
 
     /**
