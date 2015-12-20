@@ -1,5 +1,5 @@
 {
-    "name": "mongofill/mongofill",
+    "name": "fiskie/mongofill",
     "description": "Polyfill of PECL Mongo extension",
     "minimum-stability": "stable",
     "license": "MIT",
