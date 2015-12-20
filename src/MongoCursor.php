@@ -626,6 +626,9 @@ class MongoCursor implements Iterator
      */
     public function current()
     {
+        $this->doQuery();
+        $this->fetchMoreDocumentsIfNeeded();
+
         if (!isset($this->documents[$this->currKey])) {
             return null;
         }
