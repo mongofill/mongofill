@@ -180,6 +180,15 @@ class MongoCursorTest extends TestCase
         $this->assertSame(500, $this->coll->find()->limit(10)->count());
     }
 
+    public function testEmptyRewind()
+    {
+        $result = $this->coll->find();
+        $this->assertCount(0, $result);
+
+        $result->rewind();
+        $this->assertCount(0, $result);
+    }
+
     public function testReset()
     {
         $this->createNDocuments(500);

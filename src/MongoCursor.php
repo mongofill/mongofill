@@ -688,6 +688,8 @@ class MongoCursor implements Iterator
     public function rewind()
     {
         $this->currKey = 0;
-        $this->end = false;
+        if (count($this->documents) > 0) {
+            $this->end = false;
+        }
     }
 }
