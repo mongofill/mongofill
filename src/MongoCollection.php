@@ -495,7 +495,7 @@ class MongoCollection
      *    already exists
      *
      *
-     * @param string|array $key|keys -
+     * @param array        $keys -
      * @param array        $options  - This parameter is an associative array of
      *   the form array("optionname" => boolean, ...).
      *
@@ -504,11 +504,8 @@ class MongoCollection
      *   in the status array are described in the documentation for
      *   MongoCollection::insert().
      */
-    public function ensureIndex($keys, array $options = [])
+    public function createIndex(array $keys, array $options = [])
     {
-        if (!is_array($keys)) {
-            $keys = [$keys => 1];
-        }
 
         $index = [
             'ns' => $this->fqn,
@@ -541,6 +538,20 @@ class MongoCollection
         );
 
         return $return;
+    }
+
+    /**
+     * @deprecated use createIndex()
+     * @param string|array $keys
+     * @param array        $options
+     */
+    public function ensureIndex($keys, array $options = [])
+    {
+        if (!is_array($keys)) {
+            $keys = [$keys => 1];
+        }
+
+        return $this->createIndex($keys, $options);
     }
 
     /**
