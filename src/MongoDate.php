@@ -68,4 +68,14 @@ class MongoDate
         $sec = (int)(($val / 1000) - ($val < 0 && $usec));
         return new MongoDate($sec, $usec);
     }
+
+    /**
+     * Returns a DateTime object representing this date
+     *
+     * @return DateTime
+     */
+    public function toDateTime()
+    {
+        return new DateTime('@' . $this->sec);
+    }
 }
