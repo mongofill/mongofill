@@ -294,8 +294,6 @@ class MongoCursor implements Iterator
      */
     public function count($foundOnly = false)
     {
-        $this->doQuery();
-
         if ($foundOnly) {
             return $this->countLocalData();
         }
@@ -314,7 +312,7 @@ class MongoCursor implements Iterator
 
         $response = $this->client->_getReadProtocol($this->readPreference)->opQuery(
             $ns[0] . '.$cmd',
-            $query, 0, -1, 0,
+            $query, 0, -1, $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             $this->queryTimeout
         );
 
