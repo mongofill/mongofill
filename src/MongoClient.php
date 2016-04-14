@@ -1,5 +1,7 @@
 <?php
 
+use Exception;
+
 use Mongofill\Protocol;
 use Mongofill\Socket;
 
@@ -396,7 +398,7 @@ class MongoClient
                 $host_info['health'] = static::HEALTHY; // assume healthy since we connected
                 $host_info['state'] = static::STATE_STARTUP; // Default to unknown
                 return $protocol;
-            } catch (MongoConnectionException $e) {
+            } catch (Exception $e) {
                 $latest_error = $e;
                 continue;
             }
