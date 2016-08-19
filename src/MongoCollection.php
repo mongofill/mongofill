@@ -136,7 +136,7 @@ class MongoCollection
     }
 
     /**
-     * Queries this collection, returning a for the result set
+     * Queries this collection, returning a MongoCursor for the result set
      *
      * @param array $query - The fields for which to search. MongoDB's
      *   query language is quite extensive.
@@ -147,6 +147,20 @@ class MongoCollection
     public function find(array $query = [], array $fields = [])
     {
         return new MongoCursor($this->client, $this->fqn, $query, $fields);
+    }
+
+    /**
+     * Queries this collection, returning a MongoUnsetCursor for the result set
+     *
+     * @param array $query - The fields for which to search. MongoDB's
+     *   query language is quite extensive.
+     * @param array $fields - Fields of the results to return.
+     *
+     * @return MongoUnsetCursor - Returns an unset cursor for the search results.
+     */
+    public function findAndUnset(array $query = [], array $fields = [])
+    {
+        return new MongoUnsetCursor($this->client, $this->fqn, $query, $fields);
     }
 
     /**

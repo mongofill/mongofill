@@ -26,12 +26,12 @@ class MongoCursor implements Iterator
     /**
      * @var array[]
      */
-    private $documents = [];
+    protected $documents = [];
 
     /**
      * @var int
      */
-    private $currKey = -1;
+    protected $currKey = -1;
 
     /**
      * @var null|int
@@ -385,7 +385,7 @@ class MongoCursor implements Iterator
         return 0;
     }
 
-    private function fetchMoreDocumentsIfNeeded()
+    protected function fetchMoreDocumentsIfNeeded()
     {
         if (isset($this->documents[$this->currKey+1])) {
             return;
