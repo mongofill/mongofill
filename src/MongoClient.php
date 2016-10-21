@@ -368,7 +368,7 @@ class MongoClient
         foreach ($protocols as $protocol) {
             $host = $protocol->getServerHash();
             if (isset($this->sockets[$host])) {
-                $socket->disconnect();
+                $this->sockets[$host]->disconnect();
                 unset($this->sockets[$host]);
             }
                 unset($this->protocols[$host]);
