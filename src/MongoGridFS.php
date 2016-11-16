@@ -259,7 +259,7 @@ class MongoGridFS extends MongoCollection
         return $record;
     }
 
-    private function insertChunksFromFilename($filename, MongoId $id, $chunkSize)
+    private function insertChunksFromFilename($filename, $id, $chunkSize)
     {
         $handle = fopen($filename, 'r');
 
