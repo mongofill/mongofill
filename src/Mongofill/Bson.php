@@ -68,7 +68,16 @@ class Bson
                 if ($value instanceof \MongoId) {
                     $bin = hex2bin($value);
                     $sig = self::ETYPE_ID;
-                    if (strlen($bin) != 12) throw new \RuntimeException('Invalid MongoId value');
+                    if (strlen($bin) != 12) {
+                        $value = $value->serialize();
+                        if (mb_strlen($value) === 32) {
+                            $bin = pack('V', strlen($value)+1) . $value . "\0";
+                            $sig  = self::ETYPE_STRING;
+                        }
+                        else {
+                            throw new \RuntimeException('Invalid MongoId value');
+                        }
+                    }
                 } elseif ($value instanceof \MongoInt64) {
                     $value = (int) (string) $value;
                     $i1 = $value & 0xffffffff;
