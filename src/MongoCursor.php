@@ -274,6 +274,7 @@ class MongoCursor implements Iterator
             'skip' => $this->querySkip,
             'flags' => $this->flags | Mongofill\Protocol::QF_SLAVE_OK,
             'query' => $this->query['$query'],
+            'orderBy' => isset($this->query['$orderby']) ? $this->query['$orderby'] : [],
             'fields' => $this->fields,
             'started_iterating' => $this->fetching,
             'id' => $this->cursorId,
