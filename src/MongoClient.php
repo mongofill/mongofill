@@ -781,7 +781,7 @@ class MongoClient
      */
     public function dropDB($db)
     {
-        throw new Exception('Not Implemented');
+        return $this->selectDB($db)->drop();
     }
 
     /**
