@@ -537,12 +537,10 @@ class MongoClient
         $result = MONGOFILL_USE_APC ? apc_fetch($cache_key) : false;
 
         if (!$result) {
-            // Temporarily enforce PRIMARY read because we need this collection to come from  the
-            // PRIMARY server which we have already established a connection to.
-            $configured_read_preference = $this->getReadPreference();
-            $this->setReadPreference(static::RP_PRIMARY);
-            $conf  = $this->selectDB('local')->selectCollection('system.replset')->findOne();
-            $this->readPreference = $configured_read_preference; // Set our RP back directly, bypass setReadPreference()
+            $db  = $this->selectDB('local');
+            // Ensure we use PRIMARY protocol for this read because this is our most trusted source
+            $db->setReadPreference(MongoClient::RP_PRIMARY);
+            $conf = $db->selectCollection('system.replset')->findOne();
 
             // This will use the write protocol which is already established as the PRIMARY
             $status = $this->selectDB('admin')->command([
