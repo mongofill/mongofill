@@ -120,8 +120,8 @@ class Socket
 
     protected function throwExceptionIfError(array $record)
     {
-        if (!empty($record['err'])) {
-            throw new MongoCursorException($record['err'], $record['code']);
+        if (!empty($record['$err'])) {
+            throw new MongoCursorException($record['$err'], $record['code']);
         }
     }
 
