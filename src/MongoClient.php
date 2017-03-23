@@ -599,7 +599,7 @@ class MongoClient
         }
 
         $this->connect();
-        if (!$this->replSet) {
+        if (!$this->replSet || !$this->replSetStatus) {
             return reset($this->protocols);
         }
 
