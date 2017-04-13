@@ -689,5 +689,8 @@ class MongoCursor implements Iterator
     {
         $this->currKey = 0;
         $this->end = false;
+
+        $this->doQuery();
+        $this->fetchMoreDocumentsIfNeeded();
     }
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 case "$1" in
 setup)  echo "Creating mongo-php-driver tests environment ..."
-    git clone git@github.com:mongodb/mongo-php-driver.git
+    git clone https://github.com/mongodb/mongo-php-driver-legacy.git mongo-php-driver
     cd mongo-php-driver
     phpize
     ./configure --quiet
